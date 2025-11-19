@@ -1,8 +1,14 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
-
-async function bootstrap() {
+import { AuthGuard } from './common/guards/auth/auth.guard';
+import { RolesGuard } from './common/guards/roles/roles.guard';
+// import { ValidationPipe } from '@nestjs/common';
+async function bootstrap() {  
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+  // app.use(authmiddleware)
+  // app.useGlobalPipes(new ValidationPipe({ transform: true, whiteList:  true, forbidnWhiteListed: true }));
+  const reflector = app.get(Reflector);
+  app.useGlobalGuards(new AuthGuard(), new RolesGuard(reflector))
+  await app.listen(process.env.APPLICATION_PORT ?? 3000);
 }
 bootstrap();
