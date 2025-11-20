@@ -18,6 +18,27 @@ export class UsersService {
     });
   }
 
+  async findAllPaginated(
+    page: number,
+    limit: number,
+    sortBy: string,
+    sortOrder: 'ASC' | 'DESC',
+  ) {
+    const [users, total] = await this.usersRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      select: ['id', 'email', 'name', 'role', 'createdAt'], // exclude password
+      order: { [sortBy]: sortOrder },
+    });
+
+    return {
+      data: users,
+      total,
+      page,
+      lastPage: Math.ceil(total / limit),
+    };
+  }
+
   findOne(key:string = 'id', value: number | string) {
     return this.usersRepository.findOne({
       where: { [key]: value },

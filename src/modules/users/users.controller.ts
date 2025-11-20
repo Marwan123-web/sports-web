@@ -5,9 +5,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Post,
   Put,
-  UseGuards,
+  Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -15,6 +14,7 @@ import { UsersService } from './users.service';
 import { UpdateUserDto } from './dtos/updateUser.dto';
 import { Roles } from 'src/common/decorators/roles/roles.decorator';
 import { SystemRoles } from 'src/common/guards/roles/roles.enum';
+import { PaginationDto } from 'src/common/dtos/pagination.dto';
 
 @Controller('api/users')
 export class UsersController {
@@ -22,8 +22,14 @@ export class UsersController {
 
   @Get()
   @Roles(SystemRoles.ADMIN, SystemRoles.USER)
-  getAllUsers() {
-    return this.usersService.findAll();
+  async findAll(@Query() paginationDto: PaginationDto) {
+    const pageNumber = parseInt(paginationDto.page ?? '1', 10);
+    const pageSize = Math.min(parseInt(paginationDto.limit ?? '10', 10), 100);
+  
+    const sortBy = paginationDto.sortBy || 'createdAt';
+    const sortOrder = (paginationDto.sortOrder || 'DESC').toUpperCase() as 'ASC' | 'DESC';
+  
+    return this.usersService.findAllPaginated(pageNumber, pageSize, sortBy, sortOrder);
   }
 
   @Get(':id')
