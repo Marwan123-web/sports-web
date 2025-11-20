@@ -13,11 +13,16 @@ export class UsersService {
   ) {}
 
   findAll() {
-    return this.usersRepository.find();
+    return this.usersRepository.find({
+      select: ['id', 'email', 'name', 'role', 'createdAt', 'updatedAt']
+    });
   }
 
   findOne(id: number) {
-    return this.usersRepository.findOneBy({ id });
+    return this.usersRepository.findOne({
+      where: { id },
+      select: ['id', 'email', 'name', 'role', 'createdAt', 'updatedAt']
+    });
   }
 
   async create(userData: Partial<User>) {
@@ -31,7 +36,11 @@ export class UsersService {
   }
 
   async remove(id: number) {
-    await this.usersRepository.delete(id);
-    return { deleted: true };
+   const DeleteResult: any =  await this.usersRepository.delete(id);   
+    return { deleted: DeleteResult.affected > 0 ?true:false } ;
+  }
+
+  findByEmail(email: string) {
+    return this.usersRepository.findOneBy({ email });
   }
 }

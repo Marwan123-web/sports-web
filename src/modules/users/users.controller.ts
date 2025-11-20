@@ -12,7 +12,6 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dtos/createUser.dto';
 import { UpdateUserDto } from './dtos/updateUser.dto';
 import { Roles } from 'src/common/decorators/roles/roles.decorator';
 import { SystemRoles } from 'src/common/guards/roles/roles.enum';
@@ -32,11 +31,11 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Post('/add')
-  @UsePipes(ValidationPipe)
-  addUser(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
+  // @Post('/add')
+  // @UsePipes(ValidationPipe)
+  // addUser(@Body() createUserDto: CreateUserDto) {
+  //   return this.usersService.create(createUserDto);
+  // }
 
   @Put('/update/:id')
   @UsePipes(ValidationPipe)
