@@ -29,4 +29,9 @@ export const ErrorMap: Record<
     message: { en: 'Invalid credentials' },
     status: HttpStatus.UNAUTHORIZED,
   },
+  1007: {
+    message: { en: 'Product not found' },
+    status: HttpStatus.NOT_FOUND,
+  },
+  
 };

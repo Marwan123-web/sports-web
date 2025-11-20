@@ -6,9 +6,10 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthMiddleware } from './common/middlewares/auth/auth.middleware';
 import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProductsModule } from './modules/products/products.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), DatabaseModule, UsersModule, AuthModule],
+  imports: [ConfigModule.forRoot(), DatabaseModule, UsersModule, AuthModule, ProductsModule],
   controllers: [AppController],
   providers: [AppService],
 })

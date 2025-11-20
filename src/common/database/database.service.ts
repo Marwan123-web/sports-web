@@ -9,8 +9,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private dataSource: DataSource;
 
   constructor() {    
-    console.log('__dirname',__dirname + '/../../modules/**/entities/*.entity{.ts,.js}');
-    
     this.dataSource = new DataSource({
       type: 'postgres',
       host: process.env.HOST,

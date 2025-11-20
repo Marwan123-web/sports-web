@@ -62,6 +62,6 @@ export class UsersService {
   }
 
   findByEmail(email: string) {
-    return this.findOne('email', email);
+    return this.usersRepository.findOneBy({ email });
   }
 }
