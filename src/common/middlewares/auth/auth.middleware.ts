@@ -1,5 +1,6 @@
-import { HttpStatus, Injectable, NestMiddleware } from '@nestjs/common';
+import { Injectable, NestMiddleware } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
+import { CustomException } from 'src/common/exceptions/customException';
 import { UsersService } from 'src/modules/users/users.service';
 
 @Injectable()
@@ -9,10 +10,7 @@ export class AuthMiddleware implements NestMiddleware {
     const token = req.headers['authorization']?.split(' ')[1];
 
     if (!token) {
-      return res.status(HttpStatus.UNAUTHORIZED).send({
-        message: 'Unauthorized',
-        status: HttpStatus.UNAUTHORIZED,
-      });
+      throw new CustomException(1003);
     }
 
     try {
@@ -24,18 +22,12 @@ export class AuthMiddleware implements NestMiddleware {
           const { password, ...safeUser } = userData;
           req.user = safeUser;
         } else {
-          return res.status(HttpStatus.UNAUTHORIZED).send({
-            message: 'Invalid or expired token',
-            status: HttpStatus.UNAUTHORIZED,
-          });
+          throw new CustomException(1004);
         }
       }
       next();
     } catch (err) {
-      return res.status(HttpStatus.UNAUTHORIZED).send({
-        message: 'Invalid or expired token',
-        status: HttpStatus.UNAUTHORIZED,
-      });
+      throw new CustomException(1004);
     }
   }
 }

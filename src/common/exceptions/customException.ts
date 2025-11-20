@@ -1,7 +1,22 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+// custom-exception.ts
 
-export class customException extends HttpException {
-  constructor(msg?: string, status?: HttpStatus) {
-    super(msg ?? 'Exception Error', status ?? HttpStatus.INTERNAL_SERVER_ERROR);
+import { HttpException } from '@nestjs/common';
+import { ErrorMap } from './exceptions.map';
+
+export class CustomException extends HttpException {
+  constructor(
+    code: number,
+  ) {
+    const errorEntry = ErrorMap[code] || ErrorMap[1000];
+
+    let message = errorEntry.message;
+
+    super(
+      {
+        code,
+        message,
+      },
+      errorEntry.status
+    );
   }
 }

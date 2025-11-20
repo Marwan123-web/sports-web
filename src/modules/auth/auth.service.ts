@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
@@ -6,6 +6,7 @@ import { Auth } from './entities/auth.entity';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
+import { CustomException } from 'src/common/exceptions/customException';
 
 @Injectable()
 export class AuthService {
@@ -42,7 +43,6 @@ export class AuthService {
   }
 
   async hashPassword(plainPassword: string): Promise<string> {
-    console.log('process.env.JWT_SECRET',process.env.SALT_ROUNDS);
     const saltRounds: number = Number(process.env.SALT_ROUNDS);
     return bcrypt.hash(plainPassword, saltRounds);
   }
@@ -72,7 +72,7 @@ export class AuthService {
         userAgent,
         success,
       });
-      throw new UnauthorizedException('Invalid credentials');
+      throw new CustomException(1006);
     }
 
     success = true;
