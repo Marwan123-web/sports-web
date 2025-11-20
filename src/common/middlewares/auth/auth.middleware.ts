@@ -1,35 +1,41 @@
 import { HttpStatus, Injectable, NestMiddleware } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
+import { UsersService } from 'src/modules/users/users.service';
+
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
-  use(req: any, res: any, next: () => void) {
+  constructor(private usersService: UsersService) {}
+  async use(req: any, res: any, next: () => void) {
     const token = req.headers['authorization']?.split(' ')[1];
 
     if (!token) {
-      return res.send({
+      return res.status(HttpStatus.UNAUTHORIZED).send({
         message: 'Unauthorized',
         status: HttpStatus.UNAUTHORIZED,
       });
-    } else {      
-      // const validToken = jwt.verify(token, process.env.JWT_SECRET || '');
-      // if (!validToken) {
-      //   return res.send({
-      //     message: 'Invalid Token Provided',
-      //     status: HttpStatus.UNAUTHORIZED,
-      //   });
-      // } else {
-      // const decodedToken = jwt.verify(token, process.env.JWT_SECRET || '');
-      // console.log('decodedToken', decodedToken);
-      // return res.send({
-      //   message: 'Hello User',
-      //   status: HttpStatus.OK,
-      // });
-      // }
+    }
 
-      req['user'] = { name: 'Marwan', email: 'Maro@yahho.com', roles:['ADMIN', 'USER']  };
-      console.log("req['user'] --->", req['user']);
-
+    try {
+      // Directly verify and decode the token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || '');
+      if (decoded && decoded['sub']) {
+        const userData = await this.usersService.findOne('id', +decoded['sub']);
+        if (userData) {
+          const { password, ...safeUser } = userData;
+          req.user = safeUser;
+        } else {
+          return res.status(HttpStatus.UNAUTHORIZED).send({
+            message: 'Invalid or expired token',
+            status: HttpStatus.UNAUTHORIZED,
+          });
+        }
+      }
       next();
+    } catch (err) {
+      return res.status(HttpStatus.UNAUTHORIZED).send({
+        message: 'Invalid or expired token',
+        status: HttpStatus.UNAUTHORIZED,
+      });
     }
   }
 }

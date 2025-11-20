@@ -13,9 +13,7 @@ export class GlobalGuard implements CanActivate {
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    
     const request = context.switchToHttp().getRequest();
-    console.log('request.path',request.path);
 
     // Skip guards if route path starts with /auth
     if (request.path.startsWith('/api/auth')) {

@@ -18,9 +18,9 @@ export class UsersService {
     });
   }
 
-  findOne(id: number) {
+  findOne(key:string = 'id', value: number | string) {
     return this.usersRepository.findOne({
-      where: { id },
+      where: { [key]: value },
       select: ['id', 'email', 'name', 'role', 'createdAt', 'updatedAt']
     });
   }
@@ -32,7 +32,7 @@ export class UsersService {
 
   async update(id: number, userData: Partial<User>) {
     await this.usersRepository.update(id, userData);
-    return this.findOne(id);
+    return this.findOne('id', id);
   }
 
   async remove(id: number) {
@@ -41,6 +41,6 @@ export class UsersService {
   }
 
   findByEmail(email: string) {
-    return this.usersRepository.findOneBy({ email });
+    return this.findOne('email', email);
   }
 }
