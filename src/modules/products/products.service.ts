@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -32,11 +32,36 @@ export class ProductsService {
     limit: number,
     sortBy: string,
     sortOrder: 'ASC' | 'DESC',
-  ) {
+    q?: string,
+    filters: Record<string, any> = {},
+  ) {    
+    // Build search condition for q (if provided)
+    let where: FindOptionsWhere<Product> | FindOptionsWhere<Product>[] = {};
+
+    if (q) {
+      where = [
+        { title: ILike(`%${q}%`) },
+        { description: ILike(`%${q}%`) },
+        { brand: ILike(`%${q}%`) },
+      ];
+    }
+
+    // Add dynamic filters
+    if (Object.keys(filters).length > 0) {
+      if (Array.isArray(where) && where.length > 0) {
+        // Merge filters into each OR condition
+        where = where.map(cond => ({ ...cond, ...filters }));
+      } else {
+        // Apply filters as AND condition
+        where = { ...(where as object), ...filters };
+      }
+    }
+
     const [data, total] = await this.productRepo.findAndCount({
       skip: (page - 1) * limit,
       take: limit,
       order: { [sortBy]: sortOrder },
+      where,
     });
 
     return {

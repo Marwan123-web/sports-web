@@ -39,11 +39,14 @@ export class ProductsController {
     const sortOrder = (paginationDto.sortOrder || 'ASC').toUpperCase() as
       | 'ASC'
       | 'DESC';
+    const filterObj = paginationDto?.filter ? JSON.parse(paginationDto?.filter) : {};;
     return this.productsService.findAllPaginated(
       page,
       limit,
       sortBy,
       sortOrder,
+      paginationDto?.q,
+      filterObj,
     );
   }
 

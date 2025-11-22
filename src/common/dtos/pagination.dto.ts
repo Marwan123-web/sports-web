@@ -18,6 +18,12 @@ export function createPaginationDto(allowedSortFields: string[]) {
     @IsOptional()
     @IsIn(['ASC', 'DESC', 'asc', 'desc'])
     sortOrder: string = 'ASC';
+
+    @IsOptional()
+    q: string;
+
+    @IsOptional()
+    filter: string;
   }
 
   return PaginationDto;
