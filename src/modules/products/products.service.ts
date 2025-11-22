@@ -18,6 +18,15 @@ export class ProductsService {
     return this.productRepo.save(product);
   }
 
+  async importProducts(products: CreateProductDto[]) {
+    const savedProducts = await this.productRepo.save(products);
+  
+    return {
+      message: `${savedProducts.length} product(s) imported successfully`,
+      products: savedProducts,
+    };
+  }
+
   async findAllPaginated(
     page: number,
     limit: number,

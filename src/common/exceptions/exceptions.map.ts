@@ -33,5 +33,8 @@ export const ErrorMap: Record<
     message: { en: 'Product not found' },
     status: HttpStatus.NOT_FOUND,
   },
-  
+  1008: {
+    message: { en: 'this email is already used before.' },
+    status: HttpStatus.CONFLICT,
+  },
 };

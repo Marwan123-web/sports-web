@@ -24,6 +24,11 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
+  @Post('import')
+  bulkCreate(@Body() products: CreateProductDto[]) {
+    return this.productsService.importProducts(products);
+  }
+
   @Get()
   async findAll(
     @Query() paginationDto: InstanceType<typeof ProductsPaginationDto>,
@@ -31,7 +36,7 @@ export class ProductsController {
     const page = parseInt(paginationDto.page ?? '1', 10);
     const limit = Math.min(parseInt(paginationDto.limit ?? '10', 10), 100);
     const sortBy = paginationDto.sortBy || 'id';
-    const sortOrder = (paginationDto.sortOrder || 'DESC').toUpperCase() as
+    const sortOrder = (paginationDto.sortOrder || 'ASC').toUpperCase() as
       | 'ASC'
       | 'DESC';
     return this.productsService.findAllPaginated(

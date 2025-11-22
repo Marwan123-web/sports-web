@@ -18,6 +18,11 @@ export class AuthService {
   ) {}
 
   async register(userDto: CreateAuthDto, ipAddress: string, userAgent: string) {
+    const emailFound = await this.usersService.findByEmail(userDto.email);    
+    if (emailFound) {
+      throw new CustomException(1008); 
+    }
+
     const hashedPassword = await this.hashPassword(userDto.password);
     
     const user = await this.usersService.create({

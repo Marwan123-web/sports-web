@@ -17,7 +17,7 @@ export function createPaginationDto(allowedSortFields: string[]) {
 
     @IsOptional()
     @IsIn(['ASC', 'DESC', 'asc', 'desc'])
-    sortOrder: string = 'DESC';
+    sortOrder: string = 'ASC';
   }
 
   return PaginationDto;

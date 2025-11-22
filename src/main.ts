@@ -10,6 +10,10 @@ async function bootstrap() {
   // app.useGlobalPipes(new ValidationPipe({ transform: true, whiteList:  true, forbidnWhiteListed: true }));
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new GlobalGuard(reflector));
+  app.enableCors({
+    origin: 'http://localhost:3000', // allow your frontend origin
+    credentials: true,               // if you need cookies or auth headers
+  });
   await app.listen(process.env.APPLICATION_PORT ?? 3000);
 }
 bootstrap();
