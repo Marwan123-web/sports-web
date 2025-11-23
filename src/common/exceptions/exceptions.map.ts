@@ -37,4 +37,8 @@ export const ErrorMap: Record<
     message: { en: 'this email is already used before.' },
     status: HttpStatus.CONFLICT,
   },
+  1009: {
+    message: { en: 'your old password is wrong' },
+    status: HttpStatus.CONFLICT,
+  },
 };

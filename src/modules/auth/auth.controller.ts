@@ -1,11 +1,21 @@
-import { Controller, Post, Body, Req, Headers, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Body, Req, Headers, UsePipes, ValidationPipe, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { Request } from 'express';
+import { UpdateAuthDto } from './dto/update-auth.dto';
 
 @Controller('api/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Put('update')
+  @UsePipes(ValidationPipe)
+  async updateUser(
+    @Req() req: Request,
+    @Body() updateUserDto: UpdateAuthDto,
+  ) {    
+      return this.authService.update(req, updateUserDto);
+  }
 
   @Post('register')
   @UsePipes(ValidationPipe)
