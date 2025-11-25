@@ -41,4 +41,13 @@ export const ErrorMap: Record<
     message: { en: 'your old password is wrong' },
     status: HttpStatus.CONFLICT,
   },
+  1010: {
+    message: { en: 'Order with that id not found' },
+    status: HttpStatus.CONFLICT,
+  },
+  1011: {
+    message: { en: 'Insufficient stock for product' },
+    status: HttpStatus.NOT_FOUND,
+  },
+  
 };

@@ -12,7 +12,4 @@ export class CreateUserDto {
   @IsString()
   name?: string;
 
-  @IsOptional()
-  @IsString()
-  role?: string; // e.g., 'user' or 'admin'
 }

@@ -20,9 +20,12 @@ export class Product {
   @Column()
   brand: string;
 
-  @Column()
-  price: string; // Consider using number or decimal for calculations
+  @Column('decimal', { precision: 10, scale: 2 })
+  price: number;
 
-  @Column()
-  rating: string; // Consider splitting to rating, maxRating columns or using a float
+  @Column('decimal', { precision: 3, scale: 2, default: 0 })
+  rating: number;
+
+  @Column('int')
+  stock: number;
 }

@@ -8,8 +8,8 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Put('update')
-  @UsePipes(ValidationPipe)
   async updateUser(
     @Req() req: Request,
     @Body() updateUserDto: UpdateAuthDto,
@@ -17,8 +17,8 @@ export class AuthController {
       return this.authService.update(req, updateUserDto);
   }
 
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Post('register')
-  @UsePipes(ValidationPipe)
   async register(
     @Body() createAuthDto: CreateAuthDto,
     @Req() req: Request,
@@ -31,8 +31,8 @@ export class AuthController {
     return this.authService.register(createAuthDto, ipAddress, userAgent);
   }
 
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Post('login')
-  @UsePipes(ValidationPipe)
   async login(
     @Body() body: { email: string; password: string },
     @Req() req: Request,

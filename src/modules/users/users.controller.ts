@@ -20,6 +20,7 @@ import { UsersPaginationDto } from './dtos/usersPagination.dto';
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
+  @Roles(SystemRoles.ADMIN)
   @Get()
   async findAll(
     @Query() paginationDto: InstanceType<typeof UsersPaginationDto>,
@@ -52,8 +53,8 @@ export class UsersController {
   // }
 
   @Roles(SystemRoles.ADMIN)
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Put('/update/:id')
-  @UsePipes(ValidationPipe)
   updateUser(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
