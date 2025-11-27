@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { AuthGuard } from './common/guards/auth/auth.guard';
 import { RolesGuard } from './common/guards/roles/roles.guard';
 import { GlobalGuard } from './common/guards/globalGuard';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 // import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {  
   const app = await NestFactory.create(AppModule);
@@ -14,6 +15,7 @@ async function bootstrap() {
     origin: 'http://localhost:3000', // allow your frontend origin
     credentials: true,               // if you need cookies or auth headers
   });
+  app.useGlobalFilters(new AllExceptionsFilter());
   await app.listen(process.env.APPLICATION_PORT ?? 3000);
 }
 bootstrap();

@@ -9,8 +9,7 @@ export class CustomException extends HttpException {
 
     super(
       {
-        status: errorEntry.status,
-        message: errorEntry.message,
+        ...errorEntry.message,
       },
       errorEntry.status,
     );
