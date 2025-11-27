@@ -12,9 +12,7 @@ export class OrdersController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Post()
   create(@Body() createOrderDto: CreateOrderDto, @Req() req) {    
-    // Assume req.user.customerId comes from authorization middleware
-    createOrderDto.customerId = req.user.id;
-    return this.ordersService.create(createOrderDto);
+    return this.ordersService.create(createOrderDto, req.user.id);
   }
 
   @Get()
@@ -30,12 +28,12 @@ export class OrdersController {
   @Roles(SystemRoles.ADMIN)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateOrderDto: UpdateOrderDto, @Req() req) {
-    const order = await this.ordersService.findOne(id);
-    if (order.customerId !== req.user.id) {
-      throw new ForbiddenException('You do not have permission to update this order.');
-    }
-    return this.ordersService.update(id, updateOrderDto);
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateOrderDto: UpdateOrderDto,
+    @Req() req,
+  ) {
+    return this.ordersService.update(id, updateOrderDto, req.user.id);
   }
 
   @Roles(SystemRoles.ADMIN)

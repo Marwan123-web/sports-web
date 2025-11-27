@@ -8,6 +8,7 @@ import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { ShippingMethodsModule } from './modules/shipping-methods/shipping-methods.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     AuthModule,
     ProductsModule,
     OrdersModule,
+    ShippingMethodsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

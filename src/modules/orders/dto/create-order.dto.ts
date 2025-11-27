@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, ValidateNested, ArrayMinSize, IsArray, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class OrderItemDto {
@@ -8,17 +8,16 @@ export class OrderItemDto {
   @IsInt()
   quantity: number;
 
-  @IsInt()
-  price: number;
 }
 
 export class CreateOrderDto {
   @IsInt()
-  customerId: number;
+  shippingMethodId: number;
 
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  status?: string;
+  @Min(0)
+  shippingPrice?: number;
 
   @ValidateNested({ each: true })
   @ArrayMinSize(1)

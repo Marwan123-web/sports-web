@@ -7,6 +7,7 @@ import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CustomException } from 'src/common/exceptions/customException';
 import { Product } from '../products/entities/product.entity';
+import { ShippingService } from '../shipping-methods/shipping-methods.service';
 
 @Injectable()
 export class OrdersService {
@@ -19,69 +20,68 @@ export class OrdersService {
 
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    
+    private shippingService: ShippingService,
   ) {}
 
-  async create(createOrderDto: CreateOrderDto): Promise<Order> {
-    const { customerId, status, orderItems } = createOrderDto;
+  async create(createOrderDto: CreateOrderDto, customerId: number): Promise<Order> {
+    const { orderItems, shippingMethodId, shippingPrice } = createOrderDto;
   
-    // Verified items array type with product entity and quantity/price
-    type VerifiedItem = {
-      product: Product;
-      quantity: number;
-      price: number;
-    };
+    // 1. Verify products and calculate subtotal
+    type VerifiedItem = { product: Product; quantity: number; price: number };
     const verifiedItems: VerifiedItem[] = [];
+    let subtotal = 0;
   
     for (const item of orderItems) {
       const product = await this.productRepository.findOneBy({ id: item.productId });
-      if (!product) {
-        throw new NotFoundException(`Product with id ${item.productId} not found`);
-      }
-      if (product.stock < item.quantity) {
-        throw new CustomException(1011); //${product.title}
-      }
-      verifiedItems.push({
-        product,
-        quantity: item.quantity,
-        price: +product.price, // override client price with real price
-      });
+      if (!product) throw new NotFoundException(`Product with id ${item.productId} not found`);
+      if (product.stock < item.quantity) throw new CustomException(1011);
+      
+      verifiedItems.push({ product, quantity: item.quantity, price: +product.price });
+      subtotal += product.price * item.quantity;
     }
   
-    const order: Order = this.orderRepository.create({
-      customerId,
-      status,
-    });
-    await this.orderRepository.save(order);
+    // 2. Get shipping cost
+    const shippingMethod = await this.shippingService.findById(shippingMethodId);
+    const shippingCost = shippingPrice ?? shippingMethod.price;
+    const total = subtotal + shippingCost;
   
+    // 3. Create order
+    const order = this.orderRepository.create({
+      customerId,
+      status: 'pending',
+      shippingMethodId,
+      shippingCost,
+      total,
+    });
+    const savedOrder = await this.orderRepository.save(order);
+  
+    // 4. Create order items and update stock
     for (const item of verifiedItems) {
-      const orderItem: OrderItem = this.orderItemRepository.create({
-        order,
+      const orderItem = this.orderItemRepository.create({
+        order: savedOrder,
         product: item.product,
         quantity: item.quantity,
         price: item.price,
       });
       await this.orderItemRepository.save(orderItem);
   
-      // Decrement stock
       item.product.stock -= item.quantity;
       await this.productRepository.save(item.product);
     }
   
-    order.orderItems = verifiedItems.map((item) => ({
-      // Map to order item shape
-      product: item.product,
-      quantity: item.quantity,
-      price: item.price,
-    })) as OrderItem[];
-  
-    return order;
+    // 5. Return with relations (FIXED)
+    return this.orderRepository.findOneOrFail({
+      where: { id: savedOrder.id },
+      relations: ['orderItems', 'orderItems.product'],
+    });
   }
   
   
 
   // Find all orders for a specific user(customerId)
   async findAllByUser(customerId: number): Promise<(Order & { total: number })[]> {
+    console.log('fkjfkfj',customerId);
+    
     const orders = await this.orderRepository.find({
       where: { customerId },
       relations: ['orderItems', 'orderItems.product'],
@@ -106,17 +106,17 @@ export class OrdersService {
     return order;
   }
 
-  async update(id: number, updateOrderDto: UpdateOrderDto): Promise<Order> {
-    const order = await this.findOne(id);
-
-    if (updateOrderDto.status) {
-      order.status = updateOrderDto.status;
+  async update(id: number, updateOrderDto: UpdateOrderDto, userId: number): Promise<Order> {
+    const order = await this.orderRepository.findOne({ 
+      where: { id, customerId: userId } // Only own orders
+    });
+    
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
     }
-
-    // Consider updating order items if needed (complex logic)
-
-    await this.orderRepository.save(order);
-    return order;
+  
+    Object.assign(order, updateOrderDto);
+    return this.orderRepository.save(order);
   }
 
   async remove(id: number): Promise<void> {
