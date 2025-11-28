@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, ParseIntPipe, Req, ForbiddenException, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+  ParseIntPipe,
+  Req,
+  ForbiddenException,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -8,11 +21,17 @@ import { SystemRoles } from 'src/common/guards/roles/roles.enum';
 @Controller('api/orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
-  
+
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto, @Req() req) {    
+  create(@Body() createOrderDto: CreateOrderDto, @Req() req) {
     return this.ordersService.create(createOrderDto, req.user.id);
+  }
+
+  @Roles(SystemRoles.ADMIN)
+  @Get('all')
+  findAllOrders() {
+    return this.ordersService.findAll();
   }
 
   @Get()
@@ -23,6 +42,12 @@ export class OrdersController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number, @Req() req) {
     return this.ordersService.findOneByUser(id, req.user.id);
+  }
+
+  @Roles(SystemRoles.ADMIN)
+  @Get('order/:id')
+  findOneOrder(@Param('id', ParseIntPipe) id: number) {
+    return this.ordersService.findOne(id);
   }
 
   @Roles(SystemRoles.ADMIN)
@@ -39,10 +64,12 @@ export class OrdersController {
   @Roles(SystemRoles.ADMIN)
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number, @Req() req) {
-    const order = await this.ordersService.findOne(id);
-    if (order.customerId !== req.user.id) {
-      throw new ForbiddenException('You do not have permission to delete this order.');
-    }
+    // const order = await this.ordersService.findOne(id);
+    // if (order.customerId !== req.user.id) {
+    //   throw new ForbiddenException(
+    //     'You do not have permission to delete this order.',
+    //   );
+    // }
     return this.ordersService.remove(id);
   }
 }

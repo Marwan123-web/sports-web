@@ -148,8 +148,20 @@ export class OrdersService {
     await this.orderRepository.delete(id);
   }
 
-  // existing findOne method kept if needed, or remove if replaced by findOneByUser
-  async findOne(id: number): Promise<Order> {
+  async findAll(): Promise<(Order & { total: number })[]> {
+    const orders = await this.orderRepository.find({
+      relations: ['orderItems', 'orderItems.product', 'shippingMethod'], // Added shippingMethod here
+    });
+
+    return orders.map((order) => ({
+      ...order,
+      subTotal: order.orderItems.reduce(
+        (sum, item) => sum + item.quantity * Number(item.price),
+        0,
+      ),
+    }));
+  }
+  async findOne(id: number): Promise<Order & { subTotal: number }> {
     const order = await this.orderRepository.findOne({
       where: { id },
       relations: ['orderItems', 'orderItems.product', 'shippingMethod'],
@@ -158,7 +170,10 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException(`Order with id ${id} not found`);
     }
-
-    return order;
+    let subTotal = order.orderItems.reduce(
+      (sum, item) => sum + item.quantity * Number(item.price),
+      0,
+    );
+    return { ...order, subTotal };
   }
 }
