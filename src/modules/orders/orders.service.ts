@@ -23,28 +23,41 @@ export class OrdersService {
     private shippingService: ShippingService,
   ) {}
 
-  async create(createOrderDto: CreateOrderDto, customerId: number): Promise<Order> {
-    const { orderItems, shippingMethodId, shippingPrice } = createOrderDto;
-  
+  async create(
+    createOrderDto: CreateOrderDto,
+    customerId: number,
+  ): Promise<Order> {
+    const { orderItems, shippingMethodId } = createOrderDto;
+
     // 1. Verify products and calculate subtotal
     type VerifiedItem = { product: Product; quantity: number; price: number };
     const verifiedItems: VerifiedItem[] = [];
     let subtotal = 0;
-  
+
     for (const item of orderItems) {
-      const product = await this.productRepository.findOneBy({ id: item.productId });
-      if (!product) throw new NotFoundException(`Product with id ${item.productId} not found`);
+      const product = await this.productRepository.findOneBy({
+        id: item.productId,
+      });
+      if (!product)
+        throw new NotFoundException(
+          `Product with id ${item.productId} not found`,
+        );
       if (product.stock < item.quantity) throw new CustomException(1011);
-      
-      verifiedItems.push({ product, quantity: item.quantity, price: +product.price });
+
+      verifiedItems.push({
+        product,
+        quantity: item.quantity,
+        price: +product.price,
+      });
       subtotal += product.price * item.quantity;
     }
-  
+
     // 2. Get shipping cost
-    const shippingMethod = await this.shippingService.findById(shippingMethodId);
-    const shippingCost = shippingPrice ?? shippingMethod.price;
-    const total = subtotal + shippingCost;
-  
+    const shippingMethod =
+      await this.shippingService.findById(shippingMethodId);
+    const shippingCost = shippingMethod.price;
+    const total = +subtotal + +shippingCost;
+
     // 3. Create order
     const order = this.orderRepository.create({
       customerId,
@@ -54,7 +67,7 @@ export class OrdersService {
       total,
     });
     const savedOrder = await this.orderRepository.save(order);
-  
+
     // 4. Create order items and update stock
     for (const item of verifiedItems) {
       const orderItem = this.orderItemRepository.create({
@@ -64,57 +77,68 @@ export class OrdersService {
         price: item.price,
       });
       await this.orderItemRepository.save(orderItem);
-  
+
       item.product.stock -= item.quantity;
       await this.productRepository.save(item.product);
     }
-  
+
     // 5. Return with relations (FIXED)
     return this.orderRepository.findOneOrFail({
       where: { id: savedOrder.id },
       relations: ['orderItems', 'orderItems.product'],
     });
   }
-  
-  
 
-  // Find all orders for a specific user(customerId)
-  async findAllByUser(customerId: number): Promise<(Order & { total: number })[]> {
-    console.log('fkjfkfj',customerId);
-    
+  async findAllByUser(
+    customerId: number,
+  ): Promise<(Order & { total: number })[]> {
     const orders = await this.orderRepository.find({
       where: { customerId },
-      relations: ['orderItems', 'orderItems.product'],
+      relations: ['orderItems', 'orderItems.product', 'shippingMethod'], // Added shippingMethod here
     });
-  
-    return orders.map(order => ({
+
+    return orders.map((order) => ({
       ...order,
-      total: order.orderItems.reduce((sum, item) => sum + item.quantity * Number(item.price), 0),
+      subTotal: order.orderItems.reduce(
+        (sum, item) => sum + item.quantity * Number(item.price),
+        0,
+      ),
     }));
   }
-  
 
-  // Find one order for a user by id, verifies order belongs to user
-  async findOneByUser(id: number, customerId: number): Promise<Order> {
+  async findOneByUser(
+    id: number,
+    customerId: number,
+  ): Promise<Order & { subTotal: number }> {
     const order = await this.orderRepository.findOne({
       where: { id, customerId },
-      relations: ['orderItems', 'orderItems.product'],
+      relations: ['orderItems', 'orderItems.product', 'shippingMethod'],
     });
     if (!order) {
-      throw new NotFoundException(`Order with id ${id} not found for this user`);
+      throw new NotFoundException(
+        `Order with id ${id} not found for this user`,
+      );
     }
-    return order;
+    let subTotal = order.orderItems.reduce(
+      (sum, item) => sum + item.quantity * Number(item.price),
+      0,
+    );
+    return { ...order, subTotal };
   }
 
-  async update(id: number, updateOrderDto: UpdateOrderDto, userId: number): Promise<Order> {
-    const order = await this.orderRepository.findOne({ 
-      where: { id, customerId: userId } // Only own orders
+  async update(
+    id: number,
+    updateOrderDto: UpdateOrderDto,
+    userId: number,
+  ): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id, customerId: userId }, // Only own orders
     });
-    
+
     if (!order) {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
-  
+
     Object.assign(order, updateOrderDto);
     return this.orderRepository.save(order);
   }
@@ -128,7 +152,7 @@ export class OrdersService {
   async findOne(id: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id },
-      relations: ['orderItems', 'orderItems.product'],
+      relations: ['orderItems', 'orderItems.product', 'shippingMethod'],
     });
 
     if (!order) {
