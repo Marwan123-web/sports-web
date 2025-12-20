@@ -4,13 +4,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { Auth } from './entities/auth.entity';
+import { AuthLog } from './entities/auth.entity';
 import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     UsersModule,
-    TypeOrmModule.forFeature([Auth]),
+    TypeOrmModule.forFeature([AuthLog]),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,

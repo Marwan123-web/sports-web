@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
-import { Auth } from './entities/auth.entity';
+import { AuthLog } from './entities/auth.entity';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -16,25 +16,32 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    @InjectRepository(Auth)
-    private authRepository: Repository<Auth>,
+    @InjectRepository(AuthLog)
+    private authRepository: Repository<AuthLog>,
   ) {}
 
-  async register(userDto: CreateAuthDto, ipAddress: string, userAgent: string) {
-    const emailFound = await this.usersService.findByEmail(userDto.email);
-    if (emailFound) {
-      throw new CustomException(1008);
+  // SIGNUP
+  async register(
+    userDto: CreateAuthDto,
+    ipAddress: string,
+    userAgent: string,
+  ) {
+    const existing = await this.usersService.findByUsername(userDto.username);
+    if (existing) {
+      throw new CustomException(1008); // username already used
     }
 
     const hashedPassword = await this.hashPassword(userDto.password);
 
     const user = await this.usersService.create({
-      ...userDto,
+      username: userDto.username,
+      name: userDto.name,
+      surname: userDto.surname,
       password: hashedPassword,
     });
+
     const { password, ...userWithoutPassword } = user;
 
-    // Log successful registration as a login success
     await this.authRepository.save({
       userId: user.id,
       ipAddress,
@@ -42,7 +49,7 @@ export class AuthService {
       success: true,
     });
 
-    const payload = { username: user.email, sub: user.id, role: user.role };
+    const payload = { username: user.username, sub: user.id, role: user.role };
     return {
       message: 'User registered',
       access_token: this.jwtService.sign(payload),
@@ -51,12 +58,13 @@ export class AuthService {
   }
 
   async hashPassword(plainPassword: string): Promise<string> {
-    const saltRounds: number = Number(process.env.SALT_ROUNDS);
+    const saltRounds: number = Number(process.env.SALT_ROUNDS || 10);
     return bcrypt.hash(plainPassword, saltRounds);
   }
 
-  async validateUser(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
+  // validate by username
+  async validateUser(username: string, password: string) {
+    const user = await this.usersService.findByUsername(username);
     if (user && (await bcrypt.compare(password, user.password))) {
       const { password, ...result } = user;
       return result;
@@ -64,23 +72,23 @@ export class AuthService {
     return null;
   }
 
+  // SIGNIN
   async login(
-    email: string,
+    username: string,
     password: string,
     ipAddress: string,
     userAgent: string,
   ) {
-    const user = await this.validateUser(email, password);
+    const user = await this.validateUser(username, password);
     let success = false;
 
     if (!user) {
-      // Log failed login attempt without user
       await this.authRepository.save({
         ipAddress,
         userAgent,
         success,
       });
-      throw new CustomException(1006);
+      throw new CustomException(1006); // invalid credentials
     }
 
     success = true;
@@ -92,12 +100,14 @@ export class AuthService {
       success,
     });
 
-    const payload = { username: user.email, sub: user.id, role: user.role };
+    const payload = { username: user.username, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
       user,
     };
   }
+
+  // UPDATE PROFILE (username / name / surname / password)
   async update(req: Request, userData: Partial<UpdateAuthDto>) {
     const authHeader = req.headers['authorization'];
     if (!authHeader) throw new CustomException(1000);
@@ -106,9 +116,9 @@ export class AuthService {
     if (!token) throw new CustomException(1000);
 
     const secret = process.env.JWT_SECRET || '';
-    let decoded: { sub?: string };
+    let decoded: { sub?: number };
     try {
-      decoded = jwt.verify(token, secret) as { sub?: string };
+      decoded = jwt.verify(token, secret) as { sub?: number };
     } catch {
       throw new CustomException(1000);
     }
@@ -116,19 +126,23 @@ export class AuthService {
     const userId = decoded.sub;
     if (!userId) throw new CustomException(1000);
 
-    const user = await this.usersService.findOne('id', +userId);
+    const user = await this.usersService.findById(userId);
     if (!user) throw new CustomException(1004);
 
-    const { email: currentEmail } = user;
-
-    if (userData.email && userData.email !== currentEmail) {
-      const emailFound = await this.usersService.findByEmail(userData.email);
-      if (emailFound) throw new CustomException(1008);
+    // check username uniqueness if changed
+    if (
+      userData.username &&
+      userData.username !== user.username
+    ) {
+      const existing = await this.usersService.findByUsername(
+        userData.username,
+      );
+      if (existing) throw new CustomException(1008);
     }
 
     let newHashedPassword = '';
     if (userData.password) {
-      const userFound = await this.usersService.findByEmail(user.email);
+      const userFound = await this.usersService.findById(userId);
       const samePassword = await bcrypt.compare(
         userData.oldPassword || '',
         userFound!.password,
@@ -140,11 +154,11 @@ export class AuthService {
     }
 
     const { oldPassword, ...newData } = userData;
-    await this.usersService.update(+userId, {
+    await this.usersService.update(userId, {
       ...newData,
       ...(newHashedPassword && { password: newHashedPassword }),
     });
 
-    return this.usersService.findOne('id', +userId);
+    return this.usersService.findById(userId);
   }
 }

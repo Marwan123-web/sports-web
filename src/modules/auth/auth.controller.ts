@@ -18,7 +18,7 @@ export class AuthController {
   }
 
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  @Post('register')
+  @Post('signup')
   async register(
     @Body() createAuthDto: CreateAuthDto,
     @Req() req: Request,

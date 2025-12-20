@@ -3,25 +3,38 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Tournament } from '../../tournaments/entities/tournament.entity';
+import { Booking } from '../../bookings/entities/booking.entity';
 
-@Entity()
+@Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
+  // use as username (spec: username must be unique)
   @Column({ unique: true })
-  email: string;
+  username: string;
 
   @Column()
   password: string;
 
-  @Column({ nullable: true })
+  @Column()
   name: string;
+
+  @Column()
+  surname: string;
 
   @Column({ default: 'user' })
   role: string;
+
+  @OneToMany(() => Tournament, (t) => t.creator)
+  tournaments: Tournament[];
+
+  @OneToMany(() => Booking, (b) => b.user)
+  bookings: Booking[];
 
   @CreateDateColumn()
   createdAt: Date;
