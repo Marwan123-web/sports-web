@@ -6,6 +6,9 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthMiddleware } from './common/middlewares/auth/auth.middleware';
 import { DatabaseModule } from './common/database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ProductsModule } from './modules/products/products.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { ShippingMethodsModule } from './modules/shipping-methods/shipping-methods.module';
 
 @Module({
   imports: [
@@ -13,6 +16,9 @@ import { AuthModule } from './modules/auth/auth.module';
     DatabaseModule,
     UsersModule,
     AuthModule,
+    ProductsModule,
+    OrdersModule,
+    ShippingMethodsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
