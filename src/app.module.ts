@@ -36,9 +36,22 @@ export class AppModule implements NestModule {
     consumer
       .apply(AuthMiddleware)
       .exclude(
-        { path: 'api/auth/(.*)', method: RequestMethod.ALL }, // regex works here
-        { path: '/api/products', method: RequestMethod.GET },
-        { path: '/api/products/{*splat}', method: RequestMethod.GET },
+        // Auth routes
+        { path: 'api/auth/(.*)', method: RequestMethod.POST },
+
+        // Public fields GET
+        { path: 'api/fields', method: RequestMethod.GET },
+        { path: 'api/fields/*', method: RequestMethod.GET },
+
+        // Public tournaments GET (includes standings, matches list, details)
+        { path: 'api/tournaments', method: RequestMethod.GET },
+        { path: 'api/tournaments/*', method: RequestMethod.GET },
+
+        // Public matches GET
+        { path: 'api/matches/*', method: RequestMethod.GET },
+
+        // Public users list GET
+        { path: 'api/users', method: RequestMethod.GET }
       )
       .forRoutes('*');
   }

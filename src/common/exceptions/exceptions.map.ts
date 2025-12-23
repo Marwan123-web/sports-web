@@ -34,7 +34,7 @@ export const ErrorMap: Record<
     status: HttpStatus.NOT_FOUND,
   },
   1008: {
-    message: { en: 'this email is already used before.' },
+    message: { en: 'this username is already used before.' },
     status: HttpStatus.CONFLICT,
   },
   1009: {

@@ -161,4 +161,14 @@ export class AuthService {
 
     return this.usersService.findById(userId);
   }
+
+  async whoAmI(userId: number) {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new CustomException(1004);
+    }
+    const { password, ...safeUser } = user;
+    return safeUser;
+  }
 }
