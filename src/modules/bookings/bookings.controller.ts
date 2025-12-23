@@ -20,8 +20,6 @@ export class FieldsController {
     private readonly bookingsService: BookingsService,
   ) {}
 
-  // ... previous handlers (GET /, GET /:id, etc.)
-
   @Get(':id/slots')
   async getSlots(
     @Param('id') id: string,

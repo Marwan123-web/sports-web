@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Patch, Delete, UsePipes, ValidationPipe } from '@nestjs/common';
 import { FieldsService } from './fields.service';
 import { CreateFieldDto } from './dto/create-field.dto';
 import { UpdateFieldDto } from './dto/update-field.dto';
@@ -13,6 +13,7 @@ export class FieldsController {
     return this.fieldsService.create(dto);
   }
 
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Get()
   findAll(@Query('q') q?: string) {
     return this.fieldsService.findAll(q);
@@ -23,6 +24,7 @@ export class FieldsController {
     return this.fieldsService.findOne(id);
   }
 
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateFieldDto) {
     return this.fieldsService.update(id, dto);
