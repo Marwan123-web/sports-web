@@ -1,13 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { Field } from '../fields/entities/field.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class BookingsService {
@@ -16,71 +13,164 @@ export class BookingsService {
     private readonly bookingsRepo: Repository<Booking>,
     @InjectRepository(Field)
     private readonly fieldsRepo: Repository<Field>,
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
   ) {}
+
+  async findAll() {
+    return this.bookingsRepo.find({
+      where: { isActive: true },
+      relations: ['field', 'user'],
+      order: { date: 'ASC', startTime: 'ASC' }
+    });
+  }
+  
+  // ✅ NEW: Get bookings by field
+  async findByField(fieldId: string) {
+    const field = await this.fieldsRepo.findOne({ where: { id: fieldId } });
+    if (!field) throw new NotFoundException('Field not found');
+  
+    return this.bookingsRepo.find({
+      where: { 
+        field: { id: fieldId }, 
+        isActive: true 
+      },
+      relations: ['user'],
+      order: { date: 'ASC', startTime: 'ASC' }
+    });
+  }
 
   async create(fieldId: string, userId: string, dto: CreateBookingDto) {
     const field = await this.fieldsRepo.findOne({ where: { id: fieldId } });
     if (!field) throw new NotFoundException('Field not found');
-
+  
+    const user = await this.usersRepo.findOne({ where: { id: Number(userId) } });
+    if (!user) throw new NotFoundException('User not found');
+  
     const now = new Date();
-    const slotDateTime = new Date(`${dto.date}T${dto.time}:00`);
-
+    const slotDateTime = new Date(`${dto.date}T${dto.startTime}:00`);
     if (slotDateTime < now) {
       throw new BadRequestException('Cannot book past slots');
     }
-
-    const existing = await this.bookingsRepo.findOne({
-      where: {
-        field: { id: fieldId },
+  
+    // ✅ FIXED: Check for OVERLAPPING bookings
+    const conflictingBookings = await this.bookingsRepo.find({
+      where: { 
+        field: { id: fieldId }, 
         date: dto.date,
-        time: dto.time,
+        isActive: true 
       },
       relations: ['field'],
     });
-
-    if (existing) {
-      throw new BadRequestException('Slot already booked');
+  
+    const newStartMinutes = this.parseTimeToMinutes(dto.startTime);
+    const newEndMinutes = this.parseTimeToMinutes(dto.endTime);
+  
+    for (const booking of conflictingBookings) {
+      const bookingStart = this.parseTimeToMinutes(booking.startTime);
+      const bookingEnd = this.parseTimeToMinutes(booking.endTime);
+      
+      // ✅ Overlap check: if periods intersect
+      if (newStartMinutes < bookingEnd && newEndMinutes > bookingStart) {
+        throw new BadRequestException(
+          `Slot overlaps with existing booking ${booking.id} (${booking.startTime}-${booking.endTime})`
+        );
+      }
     }
-
+  
     const booking = this.bookingsRepo.create({
       date: dto.date,
-      time: dto.time,
-      field: { id: fieldId } as Field,
-      user: { id: userId } as any,
+      startTime: dto.startTime,
+      endTime: dto.endTime,
+      totalPrice: dto.totalPrice,
+      field,
+      user,
     });
-
-    return this.bookingsRepo.save(booking);
+  
+    return await this.bookingsRepo.save(booking);
   }
+  
 
+  // Remove console.logs
   async remove(fieldId: string, bookingId: string, userId: string) {
     const booking = await this.bookingsRepo.findOne({
       where: { id: bookingId },
       relations: ['field', 'user'],
     });
-  
+
     if (!booking || booking.field.id !== fieldId) {
       throw new NotFoundException('Booking not found');
     }
-  
-    const currentUserId = Number(userId); // normalize type
-  
-    if (booking.user.id !== currentUserId) {
-      throw new BadRequestException('Cannot cancel a booking of another user');
+
+    if (!userId || booking.user.id !== Number(userId)) {
+      throw new BadRequestException('Invalid user');
     }
-  
-    const slotDateTime = new Date(`${booking.date}T${booking.time}:00`);
+
+    const slotDateTime = new Date(`${booking.date}T${booking.startTime}:00`);
     if (slotDateTime < new Date()) {
       throw new BadRequestException('Cannot cancel past bookings');
     }
-  
-    await this.bookingsRepo.remove(booking);
+
+    if (!booking.isActive) {
+      throw new BadRequestException('Booking already cancelled');
+    }
+    
+
+    await this.bookingsRepo.update(booking.id, { 
+      isActive: false,
+    });
+
     return { deleted: true };
+  }
+
+
+  async findByFieldAndDate(fieldId: string, date: string) {
+    const bookings = await this.bookingsRepo.find({
+      where: { 
+        field: { id: fieldId }, 
+        date,
+        isActive: true 
+      },
+      relations: ['field'], // Need full booking data
+    });
+  
+    // ✅ Generate ALL occupied times from each booking
+    const bookedTimes: string[] = [];
+    
+    bookings.forEach(booking => {
+      // Parse times (e.g., "10:00" -> 10*60 = 600 minutes)
+      const startMinutes = this.parseTimeToMinutes(booking.startTime);
+      const endMinutes = this.parseTimeToMinutes(booking.endTime);
+      
+      // Add every hour slot this booking occupies
+      for (let minute = startMinutes; minute < endMinutes; minute += 60) {
+        const timeSlot = this.minutesToTime(minute);
+        bookedTimes.push(timeSlot);
+      }
+    });
+  
+    return { startTimes: bookedTimes }; // Return as object
   }
   
 
-  async findByFieldAndDate(fieldId: string, date: string) {
+  async findUserBookings(userId: number) {    
     return this.bookingsRepo.find({
-      where: { field: { id: fieldId }, date },
+      where: { user: { id: userId } },
+      relations: ['field'],
+      order: { date: 'DESC', startTime: 'DESC' }
     });
   }
+
+  private parseTimeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+  
+  private minutesToTime(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  }
+  
+  
 }

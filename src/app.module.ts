@@ -43,6 +43,10 @@ export class AppModule implements NestModule {
         { path: 'api/fields', method: RequestMethod.GET },
         { path: 'api/fields/*', method: RequestMethod.GET },
 
+        // Public Bookings GET
+        { path: 'api/bookings', method: RequestMethod.GET },
+        { path: 'api/bookings/*', method: RequestMethod.GET },
+        
         // Public tournaments GET (includes standings, matches list, details)
         { path: 'api/tournaments', method: RequestMethod.GET },
         { path: 'api/tournaments/*', method: RequestMethod.GET },

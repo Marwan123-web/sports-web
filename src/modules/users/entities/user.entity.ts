@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { Tournament } from '../../tournaments/entities/tournament.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
@@ -16,6 +17,7 @@ export class User {
 
   // use as username (spec: username must be unique)
   @Column({ unique: true })
+  @Index() // Performance boost
   username: string;
 
   @Column()
@@ -30,10 +32,10 @@ export class User {
   @Column({ default: 'user' })
   role: string;
 
-  @OneToMany(() => Tournament, (t) => t.creator)
+  @OneToMany(() => Tournament, (t) => t.creator, { cascade: true })
   tournaments: Tournament[];
 
-  @OneToMany(() => Booking, (b) => b.user)
+  @OneToMany(() => Booking, (b) => b.user, { cascade: true })
   bookings: Booking[];
 
   @CreateDateColumn()
@@ -41,4 +43,7 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ default: true })
+  isActive: boolean;
 }

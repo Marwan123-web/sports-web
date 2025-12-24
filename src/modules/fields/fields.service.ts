@@ -18,8 +18,8 @@ export class FieldsService {
   }
 
   findAll(q?: string) {
-    if (!q) return this.fieldsRepo.find();
-
+    if (!q) return this.fieldsRepo.find();  // ✅ All active fields
+  
     const like = `%${q}%`;
     return this.fieldsRepo.find({
       where: [
