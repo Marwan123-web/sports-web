@@ -28,7 +28,7 @@ export class Tournament {
     type: 'enum',
     enum: ['football', 'volleyball', 'basketball'],  // ✅ DB enum
   })
-  sport: SportType | string;
+  sport: SportType ;
 
   @Column({ default: 16 })  // ✅ Default value
   maxTeams: number;

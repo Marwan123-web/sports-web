@@ -1,55 +1,39 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
-  Param,
-  Patch,
   Post,
+  Body,
+  Param,
   Req,
-  UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
-import { UpdateTeamDto } from './dto/update-team.dto';
 
-@Controller('api/tournaments/:tournamentId/teams')
+@ApiTags('Teams')
+@Controller('teams')
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
-  @Get()
-  findAll(@Param('tournamentId') tournamentId: string) {
-    return this.teamsService.findAllByTournament(tournamentId);
-  }
-
-  
   @Post()
-  create(
-    @Param('tournamentId') tournamentId: string,
-    @Body() dto: CreateTeamDto,
-    @Req() req: any,
-  ) {
-    return this.teamsService.create(tournamentId, dto, req.user.id);
+  @ApiOperation({ summary: 'Create a new team' })
+  @ApiResponse({ status: 201, description: 'Team created successfully' })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  create(@Body() dto: CreateTeamDto, @Req() req: any) {
+    return this.teamsService.create(dto, req.user['sub']);
   }
 
-  
-  @Patch(':teamId')
-  update(
-    @Param('tournamentId') tournamentId: string,
-    @Param('teamId') teamId: string,
-    @Body() dto: UpdateTeamDto,
-    @Req() req: any,
-  ) {
-    return this.teamsService.update(tournamentId, teamId, dto, req.user.id);
+  @Get('tournament/:tournamentId')
+  @ApiOperation({ summary: 'Get all teams in a tournament' })
+  findByTournament(@Param('tournamentId') tournamentId: string) {
+    return this.teamsService.findByTournament(tournamentId);
   }
 
-  
-  @Delete(':teamId')
-  remove(
-    @Param('tournamentId') tournamentId: string,
-    @Param('teamId') teamId: string,
-    @Req() req: any,
-  ) {
-    return this.teamsService.remove(tournamentId, teamId, req.user.id);
+  @Get(':id')
+  @ApiOperation({ summary: 'Get team by ID' })
+  findOne(@Param('id') id: string) {
+    return this.teamsService.findOne(id);
   }
 }

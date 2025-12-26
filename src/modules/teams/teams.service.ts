@@ -1,5 +1,5 @@
 import {
-  ForbiddenException,
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Team } from './entities/team.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
-import { UpdateTeamDto } from './dto/update-team.dto';
 import { Tournament } from '../tournaments/entities/tournament.entity';
 
 @Injectable()
@@ -19,70 +18,63 @@ export class TeamsService {
     private readonly tournamentsRepo: Repository<Tournament>,
   ) {}
 
-  async create(tournamentId: string, dto: CreateTeamDto, userId: number) {
+  async create(dto: CreateTeamDto, userId: number) {
+    // ✅ Check tournament exists + registration open
     const tournament = await this.tournamentsRepo.findOne({
-      where: { id: tournamentId },
-      relations: ['creator', 'teams'],
+      where: { 
+        id: dto.tournamentId, 
+        status: 'registration',
+        isActive: true 
+      },
     });
-    if (!tournament) throw new NotFoundException('Tournament not found');
 
-    if (tournament.creator.id !== userId) {
-      throw new ForbiddenException('Only the creator can add teams');
+    if (!tournament) {
+      throw new NotFoundException('Tournament not found or registration closed');
     }
 
-    if (tournament.teams.length >= tournament.maxTeams) {
-      throw new ForbiddenException('Maximum number of teams reached');
+    // ✅ Check maxTeams not reached
+    const currentTeams = await this.teamsRepo.count({ 
+      where: { tournament: { id: dto.tournamentId } } 
+    });
+
+    if (currentTeams >= tournament.maxTeams) {
+      throw new BadRequestException('Tournament is full');
     }
 
-    const team = this.teamsRepo.create({
-      name: dto.name,
-      tournament,
-    });
+    // ✅ Check sport matches tournament
+    if (tournament.sport !== dto.sport) {
+      throw new BadRequestException(`Tournament sport is ${tournament.sport}`);
+    }
 
-    return this.teamsRepo.save(team);
+    const team = new Team();
+    team.name = dto.name;
+    team.sport = dto.sport as any;
+    team.tournament = tournament;
+
+    return await this.teamsRepo.save(team);
   }
 
-  async findAllByTournament(tournamentId: string) {
-    return this.teamsRepo.find({
-      where: { tournament: { id: tournamentId } },
-      relations: ['players'],
+  async findByTournament(tournamentId: string) {
+    return await this.teamsRepo.find({
+      where: { 
+        tournament: { id: tournamentId },
+        isActive: true 
+      },
+      order: { createdAt: 'ASC' },
+      relations: ['tournament', 'players'],
     });
   }
 
-  async update(
-    tournamentId: string,
-    teamId: string,
-    dto: UpdateTeamDto,
-    userId: number,
-  ) {
+  async findOne(id: string) {
     const team = await this.teamsRepo.findOne({
-      where: { id: teamId },
-      relations: ['tournament', 'tournament.creator'],
+      where: { id, isActive: true },
+      relations: ['tournament', 'players'],
     });
-    if (!team || team.tournament.id !== tournamentId) {
+
+    if (!team) {
       throw new NotFoundException('Team not found');
     }
-    if (team.tournament.creator.id !== userId) {
-      throw new ForbiddenException('Only the creator can edit teams');
-    }
 
-    Object.assign(team, dto);
-    return this.teamsRepo.save(team);
-  }
-
-  async remove(tournamentId: string, teamId: string, userId: number) {
-    const team = await this.teamsRepo.findOne({
-      where: { id: teamId },
-      relations: ['tournament', 'tournament.creator'],
-    });
-    if (!team || team.tournament.id !== tournamentId) {
-      throw new NotFoundException('Team not found');
-    }
-    if (team.tournament.creator.id !== userId) {
-      throw new ForbiddenException('Only the creator can delete teams');
-    }
-
-    await this.teamsRepo.remove(team);
-    return { deleted: true };
+    return team;
   }
 }
