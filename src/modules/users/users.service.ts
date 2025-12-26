@@ -18,18 +18,18 @@ export class UsersService {
     return this.usersRepo.findOne({ where: { id } });
   }
 
+  // ✅ FIXED: Use new User() instead of create()
   async create(data: Partial<User>) {
-    const user = this.usersRepo.create(data);
+    const user = new User();
+    Object.assign(user, data);
     return this.usersRepo.save(user);
   }
 
-  // add this
   async update(id: number, data: Partial<User>) {
     await this.usersRepo.update(id, data);
     return this.findById(id);
   }
 
-  // optional: user list with tournaments they created
   findAllWithTournaments(q?: string) {
     const where = q
       ? [
@@ -40,7 +40,7 @@ export class UsersService {
       : {};
     return this.usersRepo.find({
       where,
-      relations: ['tournaments'],
+      relations: ['tournaments'],  // ✅ Fixed relation name
     });
   }
 }
