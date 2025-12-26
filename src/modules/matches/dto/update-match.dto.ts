@@ -1,9 +1,16 @@
-import { IsInt } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsInt, Min } from 'class-validator';
 
-export class UpdateResultDto {
+export class UpdateMatchResultDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsInt()
-  homeScore: number;
+  @Min(0)
+  scoreTeam1?: number;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsInt()
-  awayScore: number;
+  @Min(0)
+  scoreTeam2?: number;
 }

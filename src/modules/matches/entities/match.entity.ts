@@ -1,40 +1,33 @@
-import {
-  Column,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { Tournament } from '../../tournaments/entities/tournament.entity';
 import { Team } from '../../teams/entities/team.entity';
 
-export type MatchStatus = 'upcoming' | 'played';
-
-@Entity('matches')
+@Entity()
 export class Match {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Tournament, (t) => t.matches, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Tournament, tournament => tournament.matches)
   tournament: Tournament;
 
-  @ManyToOne(() => Team, { eager: true })
-  homeTeam: Team;
+  @ManyToOne(() => Team)
+  team1: Team;
 
-  @ManyToOne(() => Team, { eager: true })
-  awayTeam: Team;
-
-  @Column({ type: 'timestamp', nullable: true })
-  date: Date | null;
-
-  @Column({ type: 'uuid', nullable: true }) // or 'int' if Field.id is number
-  fieldId: string | null;
-
-  @Column({ type: 'varchar', default: 'upcoming' })
-  status: MatchStatus;
+  @ManyToOne(() => Team)
+  team2: Team;
 
   @Column({ type: 'int', nullable: true })
-  homeScore: number | null;
+  scoreTeam1: number | null;
 
   @Column({ type: 'int', nullable: true })
-  awayScore: number | null;
+  scoreTeam2: number | null;
+
+  @Column({ 
+    default: 'scheduled',
+    enum: ['scheduled', 'live', 'finished']
+  })
+  status: 'scheduled' | 'live' | 'finished';
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

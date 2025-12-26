@@ -1,53 +1,53 @@
 import {
   Controller,
   Get,
-  Param,
   Post,
-  Put,
+  Patch,
   Body,
-  UseGuards,
+  Param,
   Req,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { MatchesService } from './matches.service';
-import { UpdateResultDto } from './dto/update-match.dto';
+import { CreateMatchDto } from './dto/create-match.dto';
+import { UpdateMatchResultDto } from './dto/update-match.dto';
 
-@Controller()
+@ApiTags('Matches')
+@Controller('matches')
 export class MatchesController {
   constructor(private readonly matchesService: MatchesService) {}
 
-  // POST /api/tournaments/:id/matches/generate
-  
-  @Post('api/tournaments/:tournamentId/matches/generate')
-  generate(
-    @Param('tournamentId') tournamentId: string,
-    @Req() req: any,
-  ) {
-    return this.matchesService.generateForTournament(
-      tournamentId,
-      req.user.id,
-    );
+  @Post()
+  @ApiOperation({ summary: 'Schedule new match' })
+  @ApiResponse({ status: 201, description: 'Match scheduled successfully' })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  create(@Body() dto: CreateMatchDto, @Req() req: any) {
+    return this.matchesService.create(dto, req.user['sub']);
   }
 
-  // GET /api/tournaments/:id/matches
-  @Get('api/tournaments/:tournamentId/matches')
+  @Patch(':id/result')
+  @ApiOperation({ summary: 'Update match result' })
+  @ApiResponse({ status: 200, description: 'Match result updated' })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  updateResult(
+    @Param('id') id: string,
+    @Body() dto: UpdateMatchResultDto,
+    @Req() req: any,
+  ) {
+    return this.matchesService.updateResult(id, dto, req.user['sub']);
+  }
+
+  @Get('tournament/:tournamentId')
+  @ApiOperation({ summary: 'Get all matches in tournament' })
   findByTournament(@Param('tournamentId') tournamentId: string) {
     return this.matchesService.findByTournament(tournamentId);
   }
 
-  // GET /api/matches/:id
-  @Get('api/matches/:id')
+  @Get(':id')
+  @ApiOperation({ summary: 'Get match by ID' })
   findOne(@Param('id') id: string) {
     return this.matchesService.findOne(id);
-  }
-
-  // PUT /api/matches/:id/result
-  
-  @Put('api/matches/:id/result')
-  updateResult(
-    @Param('id') id: string,
-    @Body() dto: UpdateResultDto,
-    @Req() req: any,
-  ) {
-    return this.matchesService.updateResult(id, req.user.id, dto);
   }
 }

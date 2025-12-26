@@ -1,15 +1,16 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Match } from './entities/match.entity';
+import { CreateMatchDto } from './dto/create-match.dto';
 import { Tournament } from '../tournaments/entities/tournament.entity';
 import { Team } from '../teams/entities/team.entity';
-import { UpdateResultDto } from './dto/update-match.dto';
+import { UpdateMatchResultDto } from './dto/update-match.dto';
 
 @Injectable()
 export class MatchesService {
@@ -22,82 +23,104 @@ export class MatchesService {
     private readonly teamsRepo: Repository<Team>,
   ) {}
 
-  // POST /api/tournaments/:id/matches/generate
-  async generateForTournament(tournamentId: string, userId: number) {
+  async create(dto: CreateMatchDto, userId: number) {
+    // ✅ Check tournament exists + registration closed
     const tournament = await this.tournamentsRepo.findOne({
-      where: { id: tournamentId },
-      relations: ['creator', 'teams'],
+      where: { 
+        id: dto.tournamentId, 
+        isActive: true 
+      },
     });
-    if (!tournament) throw new NotFoundException('Tournament not found');
 
-    if (tournament.creator.id !== userId) {
-      throw new ForbiddenException('Only the creator can generate matches');
+    if (!tournament) {
+      throw new NotFoundException('Tournament not found');
     }
 
-    const teams = tournament.teams;
-    if (teams.length < 2) {
-      throw new BadRequestException('Need at least 2 teams');
+    if (tournament.status === 'registration') {
+      throw new BadRequestException('Cannot schedule matches during registration');
     }
 
-    const existing = await this.matchesRepo.count({
-      where: { tournament: { id: tournamentId } },
+    // ✅ Check both teams exist + belong to tournament
+    const team1 = await this.teamsRepo.findOne({
+      where: { id: dto.team1Id, tournament: { id: dto.tournamentId } }
     });
-    if (existing > 0) {
-      throw new BadRequestException('Matches already generated');
+    const team2 = await this.teamsRepo.findOne({
+      where: { id: dto.team2Id, tournament: { id: dto.tournamentId } }
+    });
+
+    if (!team1 || !team2) {
+      throw new NotFoundException('Team not found or not in this tournament');
     }
 
-    const matches: Match[] = [];
-    for (let i = 0; i < teams.length; i++) {
-      for (let j = i + 1; j < teams.length; j++) {
-        const match = this.matchesRepo.create({
-          tournament,
-          homeTeam: teams[i],
-          awayTeam: teams[j],
-          status: 'upcoming',
-          date: null,      // you can set dates later if you want
-          fieldId: null,
-        });
-        matches.push(match);
-      }
+    if (team1.id === team2.id) {
+      throw new BadRequestException('Cannot match team against itself');
     }
 
-    return this.matchesRepo.save(matches);
+    // ✅ Check match doesn't already exist
+    const existingMatch = await this.matchesRepo.findOne({
+      where: [
+        { team1: { id: dto.team1Id }, team2: { id: dto.team2Id } },
+        { team1: { id: dto.team2Id }, team2: { id: dto.team1Id } },
+      ]
+    });
+
+    if (existingMatch) {
+      throw new BadRequestException('Match already scheduled');
+    }
+
+    const match = new Match();
+    match.tournament = tournament;
+    match.team1 = team1;
+    match.team2 = team2;
+    match.status = 'scheduled';
+
+    return await this.matchesRepo.save(match);
   }
 
-  // GET /api/tournaments/:id/matches
-  findByTournament(tournamentId: string) {
-    return this.matchesRepo.find({
-      where: { tournament: { id: tournamentId } },
-      order: { date: 'ASC' },
-    });
-  }
-
-  // GET /api/matches/:id
-  async findOne(id: string) {
+  async updateResult(id: string, dto: UpdateMatchResultDto, userId: number) {
     const match = await this.matchesRepo.findOne({
       where: { id },
       relations: ['tournament', 'tournament.creator'],
     });
-    if (!match) throw new NotFoundException('Match not found');
-    return match;
+
+    if (!match) {
+      throw new NotFoundException('Match not found');
+    }
+
+    // ✅ Only tournament creator can update results
+    if (match.tournament.creator!.id !== userId) {
+      throw new ForbiddenException('Only tournament creator can update results');
+    }
+
+    if (dto.scoreTeam1 !== undefined || dto.scoreTeam2 !== undefined) {
+      match.scoreTeam1 = dto.scoreTeam1 ?? match.scoreTeam1;
+      match.scoreTeam2 = dto.scoreTeam2 ?? match.scoreTeam2;
+      match.status = 'finished';
+    }
+
+    return await this.matchesRepo.save(match);
   }
 
-  // PUT /api/matches/:id/result
-  async updateResult(id: string, userId: number, dto: UpdateResultDto) {
-    const match = await this.findOne(id);
+  async findByTournament(tournamentId: string) {
+    return await this.matchesRepo.find({
+      where: { 
+        tournament: { id: tournamentId },
+      },
+      order: { createdAt: 'ASC' },
+      relations: ['tournament', 'team1', 'team2'],
+    });
+  }
 
-    if (match.tournament.creator.id !== userId) {
-      throw new ForbiddenException('Only the creator can enter results');
+  async findOne(id: string) {
+    const match = await this.matchesRepo.findOne({
+      where: { id },
+      relations: ['tournament', 'team1', 'team2'],
+    });
+
+    if (!match) {
+      throw new NotFoundException('Match not found');
     }
 
-    if (!match.date || match.date > new Date()) {
-      throw new BadRequestException('Cannot set result before match date');
-    }
-
-    match.homeScore = dto.homeScore;
-    match.awayScore = dto.awayScore;
-    match.status = 'played';
-
-    return this.matchesRepo.save(match);
+    return match;
   }
 }
