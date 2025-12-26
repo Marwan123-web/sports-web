@@ -1,26 +1,23 @@
-import {
-    Column,
-    Entity,
-    ManyToOne,
-    PrimaryGeneratedColumn,
-  } from 'typeorm';
-  import { Team } from '../../teams/entities/team.entity';
-  
-  @Entity('players')
-  export class Player {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
-  
-    @Column()
-    name: string;
-  
-    @Column()
-    surname: string;
-  
-    @Column({ nullable: true })
-    jerseyNumber?: number;
-  
-    @ManyToOne(() => Team, (team) => team.players, { onDelete: 'CASCADE' })
-    team: Team;
-  }
-  
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Team } from '../../teams/entities/team.entity';
+
+@Entity()
+export class Player {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  name: string;
+
+  @Column()
+  position: string;  // "forward", "defender", "goalkeeper", etc.
+
+  @ManyToOne(() => Team, team => team.players)
+  team: Team;
+
+  @Column({ default: true })
+  isActive: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
