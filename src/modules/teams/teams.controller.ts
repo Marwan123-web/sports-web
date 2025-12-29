@@ -13,7 +13,7 @@ import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 
 @ApiTags('Teams')
-@Controller('teams')
+@Controller('api/teams')
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 

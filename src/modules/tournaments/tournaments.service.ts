@@ -25,7 +25,10 @@ export class TournamentsService {
     const creator = await this.usersRepo.findOne({ where: { id: creatorId } });
     if (!creator) throw new NotFoundException('Creator not found');
   
-    if (new Date(dto.startDate) > new Date(dto.endDate)) {
+    const startDate = new Date(dto.startDate + 'T00:00:00');
+    const endDate = new Date(dto.endDate + 'T00:00:00');
+    
+    if (startDate > endDate) {
       throw new BadRequestException('Start date must be before end date');
     }
   

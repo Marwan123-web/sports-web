@@ -5,7 +5,6 @@ import {
   IsString,
   IsNotEmpty,
   Min,
-  MaxDate,
   Matches,
   IsIn,
 } from 'class-validator';
@@ -32,7 +31,6 @@ export class CreateTournamentDto {
 
   @ApiProperty({ example: '2025-12-28' })
   @IsDateString()
-  @MaxDate(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)) // Max 1 year ahead
   startDate: string;
 
   @ApiProperty({ example: '2026-01-04' })
