@@ -18,8 +18,8 @@ export class FieldsService {
   }
 
   findAll(q?: string) {
-    if (!q) return this.fieldsRepo.find();  // ✅ All active fields
-  
+    if (!q) return this.fieldsRepo.find();
+
     const like = `%${q}%`;
     return this.fieldsRepo.find({
       where: [
@@ -27,6 +27,7 @@ export class FieldsService {
         { sport: ILike(like) as any },
         { address: ILike(like) },
       ],
+      order: { pricePerHour: 'ASC' },
     });
   }
 

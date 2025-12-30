@@ -1,17 +1,35 @@
-import { IsIn, IsOptional, IsString } from 'class-validator';
-import { SportType } from '../entities/field.entity';
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
+import { Sport } from 'src/common/enums/enums';
 
 export class CreateFieldDto {
+  @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   name: string;
 
-  @IsIn(['football', 'volleyball', 'basketball'])
-  sport: SportType;
+  @ApiProperty({ enum: Sport })
+  @IsEnum(Sport)
+  sport: Sport;
 
+  @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   address: string;
 
-  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  pricePerHour: number;
+
+  @ApiProperty()
   @IsString()
+  @IsOptional()
   description?: string;
 }

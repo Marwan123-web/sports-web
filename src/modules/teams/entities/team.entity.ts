@@ -1,6 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn } from 'typeorm';
-import { SportType, Tournament } from '../../tournaments/entities/tournament.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  CreateDateColumn,
+} from 'typeorm';
+import { Tournament } from '../../tournaments/entities/tournament.entity';
 import { Player } from '../../players/entities/player.entity';
+import { Sport } from 'src/common/enums/enums';
 
 @Entity()
 export class Team {
@@ -10,13 +18,17 @@ export class Team {
   @Column()
   name: string;
 
-  @Column({ type: 'enum', enum: ['football', 'volleyball', 'basketball'] })
-  sport: SportType;
+  @Column({
+    type: 'enum',
+    enum: Sport,
+    default: Sport.FOOTBALL,
+  })
+  sport: Sport;
 
-  @ManyToOne(() => Tournament, tournament => tournament.teams)
+  @ManyToOne(() => Tournament, (tournament) => tournament.teams)
   tournament: Tournament;
 
-  @OneToMany(() => Player, player => player.team)
+  @OneToMany(() => Player, (player) => player.team)
   players: Player[];
 
   @Column({ default: true })

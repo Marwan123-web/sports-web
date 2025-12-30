@@ -12,8 +12,9 @@ import {
 import { Team } from '../../teams/entities/team.entity';
 import { Match } from '../../matches/entities/match.entity';
 import { User } from 'src/modules/users/entities/user.entity';
+import { Sport } from 'src/common/enums/enums';
 
-export type SportType = 'football' | 'volleyball' | 'basketball';
+// export type SportType = 'football' | 'volleyball' | 'basketball';
 
 @Entity('tournaments')
 export class Tournament {
@@ -21,34 +22,34 @@ export class Tournament {
   id: string;
 
   @Column()
-  @Index()  // ✅ Fast search
+  @Index()
   name: string;
 
   @Column({
     type: 'enum',
-    enum: ['football', 'volleyball', 'basketball'],  // ✅ DB enum
+    enum: Sport,
+    default: Sport.FOOTBALL,
   })
-  sport: SportType | string;
+  sport: Sport | string;
 
-  @Column({ default: 16 })  // ✅ Default value
+  @Column({ default: 16 })
   maxTeams: number;
 
   @Column({ type: 'date' })
   startDate: string;
 
   @Column({ type: 'date' })
-  endDate: string;  // ✅ Added - missing!
+  endDate: string;
 
-  @Column({ default: 'registration' })  // ✅ Tournament phases
+  @Column({ default: 'registration' })
   status: 'registration' | 'ongoing' | 'finished' | 'cancelled';
-
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'creatorId' })
   creator?: User;
 
   @Column({ default: 0 })
-  currentTeams: number;  // ✅ Track registration count
+  currentTeams: number;
 
   @OneToMany(() => Team, (team) => team.tournament, { cascade: true })
   teams: Team[];

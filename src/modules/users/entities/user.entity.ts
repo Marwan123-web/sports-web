@@ -15,10 +15,12 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // use as username (spec: username must be unique)
   @Column({ unique: true })
-  @Index() // Performance boost
+  @Index()
   username: string;
+
+  @Column({ unique: true, nullable: true })
+  email?: string;
 
   @Column()
   password: string;
