@@ -15,7 +15,7 @@ import { CreateMatchDto } from './dto/create-match.dto';
 import { UpdateMatchResultDto } from './dto/update-match.dto';
 
 @ApiTags('Matches')
-@Controller('matches')
+@Controller('api/matches')
 export class MatchesController {
   constructor(private readonly matchesService: MatchesService) {}
 
