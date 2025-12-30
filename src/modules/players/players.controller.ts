@@ -7,13 +7,14 @@ import {
   Req,
   UsePipes,
   ValidationPipe,
+  Delete,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PlayersService } from './players.service';
 import { CreatePlayerDto } from './dto/create-player.dto';
 
 @ApiTags('Players')
-@Controller('players')
+@Controller('api/players')
 export class PlayersController {
   constructor(private readonly playersService: PlayersService) {}
 
@@ -35,5 +36,14 @@ export class PlayersController {
   @ApiOperation({ summary: 'Get player by ID' })
   findOne(@Param('id') id: string) {
     return this.playersService.findOne(id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete player by ID' })
+  @ApiResponse({ status: 200, description: 'Player deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Player not found' })
+  @ApiResponse({ status: 403, description: 'Unauthorized to delete player' })
+  async deletePlayer(@Param('id') id: string, @Req() req: any) {
+    return this.playersService.delete(id);
   }
 }

@@ -21,9 +21,9 @@ export class PlayersService {
   async create(dto: CreatePlayerDto, userId: number) {
     // ✅ Check team exists + tournament registration open
     const team = await this.teamsRepo.findOne({
-      where: { 
-        id: dto.teamId, 
-        isActive: true 
+      where: {
+        id: dto.teamId,
+        isActive: true,
       },
       relations: ['tournament'],
     });
@@ -38,7 +38,7 @@ export class PlayersService {
 
     // ✅ Max 11 players per team (football/volleyball/basketball)
     const currentPlayers = await this.playersRepo.count({
-      where: { team: { id: dto.teamId } }
+      where: { team: { id: dto.teamId } },
     });
 
     if (currentPlayers >= 11) {
@@ -55,9 +55,9 @@ export class PlayersService {
 
   async findByTeam(teamId: string) {
     return await this.playersRepo.find({
-      where: { 
+      where: {
         team: { id: teamId },
-        isActive: true 
+        isActive: true,
       },
       order: { createdAt: 'ASC' },
       relations: ['team'],
@@ -75,5 +75,42 @@ export class PlayersService {
     }
 
     return player;
+  }
+
+  async delete(playerId: string) {
+    // 1. Find active player with FULL team relation
+    const player = await this.playersRepo.findOne({
+      where: { id: playerId, isActive: true },
+      relations: ['team'],
+    });
+
+    if (!player) {
+      throw new NotFoundException('Player not found');
+    }
+
+    const teamId = player.team?.id;
+
+    // 2. Remove player reference from BOTH SIDES
+    player.team = null; // ✅ Player.team = null
+    player.isActive = false; // ✅ Soft delete
+
+    // 3. Update team.players array (remove player reference)
+    const team = await this.teamsRepo.findOne({
+      where: { id: teamId },
+      relations: ['players'],
+    });
+
+    if (team) {
+      team.players = team.players.filter((p) => p.id !== playerId);
+      await this.teamsRepo.save(team);
+    }
+
+    // 4. Save player
+    await this.playersRepo.save(player);
+
+    return {
+      message: 'Player removed from team successfully',
+      playerId,
+    };
   }
 }

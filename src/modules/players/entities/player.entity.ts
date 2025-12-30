@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+} from 'typeorm';
 import { Team } from '../../teams/entities/team.entity';
 
 @Entity()
@@ -10,10 +16,10 @@ export class Player {
   name: string;
 
   @Column()
-  position: string;  // "forward", "defender", "goalkeeper", etc.
+  position: string; // "forward", "defender", "goalkeeper", etc.
 
-  @ManyToOne(() => Team, team => team.players)
-  team: Team;
+  @ManyToOne(() => Team, (team) => team.players)
+  team: Team | null;
 
   @Column({ default: true })
   isActive: boolean;
