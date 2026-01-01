@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Tournament } from '../../tournaments/entities/tournament.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
+import { SystemRoles } from 'src/common/enums/enums';
 
 @Entity('users')
 export class User {
@@ -31,8 +32,12 @@ export class User {
   @Column()
   surname: string;
 
-  @Column({ default: 'user' })
-  role: string;
+  @Column({
+    type: 'enum',
+    enum: SystemRoles,
+    default: SystemRoles.USER,
+  })
+  role: SystemRoles;
 
   @OneToMany(() => Tournament, (t) => t.creator, { cascade: true })
   tournaments: Tournament[];

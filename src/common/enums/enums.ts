@@ -21,3 +21,8 @@ export enum TournamentStatus {
   FINISHED = 'finished',
   CANCELLED = 'cancelled',
 }
+
+export enum SystemRoles {
+  ADMIN = 'admin',
+  USER = 'user',
+}

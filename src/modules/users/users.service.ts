@@ -36,6 +36,7 @@ export class UsersService {
           { username: ILike(`%${q}%`) },
           { name: ILike(`%${q}%`) },
           { surname: ILike(`%${q}%`) },
+          { email: ILike(`%${q}%`) },
         ]
       : {};
     return this.usersRepo.find({
