@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './modules/users/users.module';
@@ -26,7 +31,7 @@ import { TournamentsModule } from './modules/tournaments/tournaments.module';
     TeamsModule,
     PlayersModule,
     MatchesModule,
-    StandingsModule
+    StandingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -46,7 +51,7 @@ export class AppModule implements NestModule {
         // Public Bookings GET
         { path: 'api/bookings', method: RequestMethod.GET },
         { path: 'api/bookings/*', method: RequestMethod.GET },
-        
+
         // Public tournaments GET (includes standings, matches list, details)
         { path: 'api/tournaments', method: RequestMethod.GET },
         { path: 'api/tournaments/*', method: RequestMethod.GET },
@@ -55,7 +60,7 @@ export class AppModule implements NestModule {
         { path: 'api/matches/*', method: RequestMethod.GET },
 
         // Public users list GET
-        { path: 'api/users', method: RequestMethod.GET }
+        // { path: 'api/users', method: RequestMethod.GET }
       )
       .forRoutes('*');
   }
