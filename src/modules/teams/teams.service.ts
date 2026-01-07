@@ -27,27 +27,34 @@ export class TeamsService {
         isActive: true 
       },
     });
-
+  
     if (!tournament) {
       throw new NotFoundException('Tournament not found or registration closed');
     }
-
+  
     // ✅ Check maxTeams not reached
     const currentTeams = await this.teamsRepo.count({ 
       where: { tournament: { id: dto.tournamentId } } 
     });
-
+  
     if (currentTeams >= tournament.maxTeams) {
-      throw new BadRequestException('Tournament is full');
+      throw new BadRequestException(`Tournament full (${currentTeams}/${tournament.maxTeams} teams)`);
     }
-
-
-    const team = new Team();
-    team.name = dto.name;
-    team.tournament = tournament;
-
-    return await this.teamsRepo.save(team);
+  
+    const team = this.teamsRepo.create({
+      name: dto.name,
+      tournament,  // Link relation
+    });
+  
+    const savedTeam = await this.teamsRepo.save(team);
+  
+    // ✅ Manually increment currentTeams
+    tournament.currentTeams = currentTeams + 1;
+    await this.tournamentsRepo.save(tournament);
+  
+    return savedTeam;
   }
+  
 
   async findByTournament(tournamentId: string) {
     return await this.teamsRepo.find({
