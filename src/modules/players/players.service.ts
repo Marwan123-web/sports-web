@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Player } from './entities/player.entity';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { Team } from '../teams/entities/team.entity';
+import { getMaxRosterSize, Sport } from 'src/common/enums/enums';
 
 @Injectable()
 export class PlayersService {
@@ -37,18 +38,40 @@ export class PlayersService {
     }
 
     // ✅ Max 11 players per team (football/volleyball/basketball)
+    const maxPlayers = getMaxRosterSize(team.tournament.sport as Sport);
     const currentPlayers = await this.playersRepo.count({
-      where: { team: { id: dto.teamId } },
+      where: { 
+        team: { id: dto.teamId },
+        isActive: true
+      },
     });
 
-    if (currentPlayers >= 11) {
-      throw new BadRequestException('Team is full (max 11 players)');
+    if (currentPlayers >= maxPlayers) {
+      throw new BadRequestException(
+        `Team is full (${currentPlayers}/${maxPlayers} players). Max ${maxPlayers} for ${team.tournament.sport}`
+      );
+    }
+
+    if (dto.isCaptain) {
+      const existingCaptain = await this.playersRepo.findOne({
+        where: { team: { id: dto.teamId }, isCaptain: true }
+      });
+      if (existingCaptain) throw new BadRequestException('Team already has captain');
+    }
+  
+    if (dto.jerseyNumber) {
+      const existingJersey = await this.playersRepo.findOne({
+        where: { team: { id: dto.teamId }, jerseyNumber: dto.jerseyNumber }
+      });
+      if (existingJersey) throw new BadRequestException('Jersey number taken');
     }
 
     const player = new Player();
     player.name = dto.name;
     player.position = dto.position;
     player.team = team;
+    player.isCaptain = dto.isCaptain ?? false;
+    player.jerseyNumber = dto.jerseyNumber;
 
     return await this.playersRepo.save(player);
   }

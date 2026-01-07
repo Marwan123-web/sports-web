@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { Team } from '../../teams/entities/team.entity';
+import { SportPosition } from 'src/common/enums/enums';
 
 @Entity()
 export class Player {
@@ -15,8 +16,18 @@ export class Player {
   @Column()
   name: string;
 
-  @Column()
-  position: string; // "forward", "defender", "goalkeeper", etc.
+  @Column({
+    type: 'enum',
+    enum: SportPosition,
+    default: SportPosition.DEFAULT
+  })
+  position: SportPosition;
+
+  @Column({ nullable: true })
+  jerseyNumber: number; 
+
+  @Column({ default: false })
+  isCaptain: boolean; 
 
   @ManyToOne(() => Team, (team) => team.players)
   team: Team | null;

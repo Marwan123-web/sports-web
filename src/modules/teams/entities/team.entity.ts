@@ -18,13 +18,6 @@ export class Team {
   @Column()
   name: string;
 
-  @Column({
-    type: 'enum',
-    enum: Sport,
-    default: Sport.FOOTBALL,
-  })
-  sport: Sport;
-
   @ManyToOne(() => Tournament, (tournament) => tournament.teams)
   tournament: Tournament;
 

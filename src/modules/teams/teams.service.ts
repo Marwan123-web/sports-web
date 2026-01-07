@@ -41,14 +41,9 @@ export class TeamsService {
       throw new BadRequestException('Tournament is full');
     }
 
-    // ✅ Check sport matches tournament
-    if (tournament.sport !== dto.sport) {
-      throw new BadRequestException(`Tournament sport is ${tournament.sport}`);
-    }
 
     const team = new Team();
     team.name = dto.name;
-    team.sport = dto.sport as any;
     team.tournament = tournament;
 
     return await this.teamsRepo.save(team);

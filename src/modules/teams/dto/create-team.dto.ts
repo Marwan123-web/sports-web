@@ -7,10 +7,6 @@ export class CreateTeamDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ enum: ['football', 'volleyball', 'basketball'] })
-  @IsIn(['football', 'volleyball', 'basketball'])
-  sport: string;
-
   @ApiProperty()
   @IsUUID()
   @IsNotEmpty()
