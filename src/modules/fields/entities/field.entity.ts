@@ -35,8 +35,8 @@ export class Field {
   })
   pricePerHour?: number;
 
-  @Column({ nullable: true })
-  description?: string;
+  @Column({ type: 'int', nullable: true })
+  capacity?: number;
 
   @OneToMany(() => Booking, (booking) => booking.field)
   bookings: Booking[];

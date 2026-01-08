@@ -29,7 +29,7 @@ export class CreateFieldDto {
   pricePerHour: number;
 
   @ApiProperty()
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  description?: string;
+  capacity?: number;
 }
