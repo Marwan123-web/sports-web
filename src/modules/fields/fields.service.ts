@@ -17,18 +17,28 @@ export class FieldsService {
     return this.fieldsRepo.save(field);
   }
 
-  findAll(q?: string) {
-    if (!q) return this.fieldsRepo.find();
+  async findAll(q?: string, date?: string) {
+    const query = this.fieldsRepo
+      .createQueryBuilder('field')
+      .leftJoinAndSelect('field.bookings', 'booking')
+      .where('field.isActive = :isActive', { isActive: true });
 
-    const like = `%${q}%`;
-    return this.fieldsRepo.find({
-      where: [
-        { name: ILike(like) },
-        { sport: ILike(like) as any },
-        { address: ILike(like) },
-      ],
-      order: { pricePerHour: 'ASC' },
-    });
+    // 👈 SIMPLE: Filter bookings by date
+    if (date) {
+      query.andWhere('(booking.date = :date OR booking.date IS NULL)', {
+        date,
+      });
+    }
+
+    if (q) {
+      const like = `%${q}%`;
+      query.andWhere(
+        '(field.name ILike :like OR field.sport::text ILike :like OR field.address ILike :like)',
+        { like },
+      );
+    }
+
+    return query.orderBy('field.pricePerHour', 'ASC').getMany();
   }
 
   async findOne(id: string) {

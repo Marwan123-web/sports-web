@@ -5,6 +5,7 @@ import { Booking } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { Field } from '../fields/entities/field.entity';
 import { User } from '../users/entities/user.entity';
+import { calculateDurationHours, minutesToTime, parseTimeToMinutes } from 'src/common/enums/enums';
 
 @Injectable()
 export class BookingsService {
@@ -51,8 +52,11 @@ export class BookingsService {
     const slotDateTime = new Date(`${dto.date}T${dto.startTime}:00`);
     if (slotDateTime < now) {
       throw new BadRequestException('Cannot book past slots');
-    }
-  
+    }    
+    const hours = calculateDurationHours(dto.startTime, dto.endTime);
+    const pricePerHour = field.pricePerHour || 25;
+    const totalPrice = parseFloat((hours * pricePerHour).toFixed(2));
+    
     // ✅ FIXED: Check for OVERLAPPING bookings
     const conflictingBookings = await this.bookingsRepo.find({
       where: { 
@@ -60,20 +64,18 @@ export class BookingsService {
         date: dto.date,
         isActive: true 
       },
-      relations: ['field'],
     });
   
-    const newStartMinutes = this.parseTimeToMinutes(dto.startTime);
-    const newEndMinutes = this.parseTimeToMinutes(dto.endTime);
+    const newStartMinutes = parseTimeToMinutes(dto.startTime);
+    const newEndMinutes = parseTimeToMinutes(dto.endTime);
   
     for (const booking of conflictingBookings) {
-      const bookingStart = this.parseTimeToMinutes(booking.startTime);
-      const bookingEnd = this.parseTimeToMinutes(booking.endTime);
+      const bookingStart = parseTimeToMinutes(booking.startTime);
+      const bookingEnd = parseTimeToMinutes(booking.endTime);
       
-      // ✅ Overlap check: if periods intersect
       if (newStartMinutes < bookingEnd && newEndMinutes > bookingStart) {
         throw new BadRequestException(
-          `Slot overlaps with existing booking ${booking.id} (${booking.startTime}-${booking.endTime})`
+          `Slot overlaps with booking #${booking.id.slice(-4)} (${booking.startTime}-${booking.endTime})`
         );
       }
     }
@@ -82,7 +84,7 @@ export class BookingsService {
       date: dto.date,
       startTime: dto.startTime,
       endTime: dto.endTime,
-      totalPrice: dto.totalPrice,
+      totalPrice,
       field,
       user,
     });
@@ -91,7 +93,6 @@ export class BookingsService {
   }
   
 
-  // Remove console.logs
   async remove(fieldId: string, bookingId: string, userId: string) {
     const booking = await this.bookingsRepo.findOne({
       where: { id: bookingId },
@@ -139,12 +140,12 @@ export class BookingsService {
     
     bookings.forEach(booking => {
       // Parse times (e.g., "10:00" -> 10*60 = 600 minutes)
-      const startMinutes = this.parseTimeToMinutes(booking.startTime);
-      const endMinutes = this.parseTimeToMinutes(booking.endTime);
+      const startMinutes = parseTimeToMinutes(booking.startTime);
+      const endMinutes = parseTimeToMinutes(booking.endTime);
       
       // Add every hour slot this booking occupies
       for (let minute = startMinutes; minute < endMinutes; minute += 60) {
-        const timeSlot = this.minutesToTime(minute);
+        const timeSlot = minutesToTime(minute);
         bookedTimes.push(timeSlot);
       }
     });
@@ -161,16 +162,7 @@ export class BookingsService {
     });
   }
 
-  private parseTimeToMinutes(time: string): number {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-  }
-  
-  private minutesToTime(minutes: number): string {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-  }
+
   
   
 }

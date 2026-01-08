@@ -37,7 +37,7 @@ export enum FootballPosition {
   ATTACKING_MIDFIELDER = 'attacking_midfielder',
   RIGHT_WINGER = 'right_winger',
   LEFT_WINGER = 'left_winger',
-  STRIKER = 'striker'
+  STRIKER = 'striker',
 }
 
 export enum BasketballPosition {
@@ -45,9 +45,8 @@ export enum BasketballPosition {
   SHOOTING_GUARD = 'shooting_guard',
   SMALL_FORWARD = 'small_forward',
   POWER_FORWARD = 'power_forward',
-  CENTER = 'center'
+  CENTER = 'center',
 }
-
 
 export enum VolleyballPosition {
   SETTER = 'setter',
@@ -55,7 +54,7 @@ export enum VolleyballPosition {
   OPPOSITE_HITTER = 'opposite_hitter',
   MIDDLE_BLOCKER = 'middle_blocker',
   LIBERO = 'libero',
-  DEFENSIVE_SPECIALIST = 'defensive_specialist'
+  DEFENSIVE_SPECIALIST = 'defensive_specialist',
 }
 
 export enum SportPosition {
@@ -86,16 +85,35 @@ export enum SportPosition {
   LIBERO = 'libero',
   DEFENSIVE_SPECIALIST = 'defensive_specialist',
 
-  DEFAULT = 'Default'
+  DEFAULT = 'Default',
 }
-
-
 
 export function getMaxRosterSize(sport: Sport): number {
   const sizes: Record<Sport, number> = {
-    [Sport.FOOTBALL]: 22,    // 11 field + substitutes
-    [Sport.BASKETBALL]: 15,  // 5 court + bench
-    [Sport.VOLLEYBALL]: 14,  // 6 court + liberos/subs
+    [Sport.FOOTBALL]: 22, // 11 field + substitutes
+    [Sport.BASKETBALL]: 15, // 5 court + bench
+    [Sport.VOLLEYBALL]: 14, // 6 court + liberos/subs
   };
-  return sizes[sport] || 20;  // Default fallback
+  return sizes[sport] || 20; // Default fallback
+}
+
+export function parseTimeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+export function calculateDurationHours(
+  startTime: string,
+  endTime: string,
+): number {
+  const startMinutes = parseTimeToMinutes(startTime);
+  const endMinutes = parseTimeToMinutes(endTime);
+  return (endMinutes - startMinutes) / 60;
+}
+
+
+export function minutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }

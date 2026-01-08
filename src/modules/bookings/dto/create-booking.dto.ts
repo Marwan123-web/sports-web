@@ -13,7 +13,4 @@ export class CreateBookingDto {
   @IsNotEmpty()
   endTime: string;
 
-  @IsNumber()
-  @Min(0)
-  totalPrice: number;
 }

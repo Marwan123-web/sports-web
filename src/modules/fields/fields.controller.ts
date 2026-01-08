@@ -1,24 +1,24 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Param, 
-  Query, 
-  Patch, 
-  Delete, 
-  UsePipes, 
-  ValidationPipe 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Patch,
+  Delete,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBearerAuth, 
-  ApiQuery, 
-  ApiParam, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
   ApiBody,
-  ApiCreatedResponse
+  ApiCreatedResponse,
 } from '@nestjs/swagger';
 import { FieldsService } from './fields.service';
 import { CreateFieldDto } from './dto/create-field.dto';
@@ -42,14 +42,14 @@ export class FieldsController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @Get()
   @ApiOperation({ summary: 'Get all fields with optional search' })
-  @ApiQuery({ 
-    name: 'q', 
-    required: false, 
+  @ApiQuery({
+    name: 'q',
+    required: false,
     description: 'Search by name or location',
-    example: 'football'
+    example: 'football',
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'List of fields',
     schema: {
       example: [
@@ -58,13 +58,13 @@ export class FieldsController {
           name: 'Central Park Field',
           sport: 'football',
           location: 'New York',
-          pricePerHour: 50
-        }
-      ]
-    }
+          pricePerHour: 50,
+        },
+      ],
+    },
   })
-  findAll(@Query('q') q?: string) {
-    return this.fieldsService.findAll(q);
+  findAll(@Query('q') q?: string, @Query('date') date?: string) {
+    return this.fieldsService.findAll(q, date);
   }
 
   @Get(':id')
