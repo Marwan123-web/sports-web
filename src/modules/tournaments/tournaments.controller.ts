@@ -13,11 +13,14 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { TournamentsService } from './tournaments.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CustomException } from 'src/common/exceptions/customException';
+import { Protected } from 'src/common/decorators';
 
 @ApiTags('tournaments')
 @Controller('api/tournaments')
@@ -27,8 +30,20 @@ export class TournamentsController {
   @Get()
   @ApiOperation({ summary: 'Get all tournaments (searchable)' })
   @ApiResponse({ status: 200, description: 'List of tournaments' })
-  findAll(@Query('q') q?: string) {
-    return this.tournamentsService.findAll(q);
+  findAll(@Query() query: { q?: string; sport?: string; status?: string }) {
+    return this.tournamentsService.findAll(query);
+  }
+
+  @Get('my')
+  @Protected()
+  @ApiOperation({ summary: 'Get all tournaments (searchable)' })
+  @ApiResponse({ status: 200, description: 'List of tournaments' })
+  findMy(
+    @Query() query: { q?: string; sport?: string; status?: string },
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.tournamentsService.findMy(query, userId);
   }
 
   @Get(':id')

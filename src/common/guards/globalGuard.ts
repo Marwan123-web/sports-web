@@ -1,41 +1,49 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  Inject,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AuthGuard } from './auth/auth.guard';
-import { RolesGuard } from './roles/roles.guard';
+import { AuthGuard as AuthGuardClass } from './auth/auth.guard';
+import { RolesGuard as RolesGuardClass } from './roles/roles.guard';
 
 @Injectable()
 export class GlobalGuard implements CanActivate {
-  private authGuard = new AuthGuard(); // or your specific strategy name
-  private rolesGuard: RolesGuard;
-
-  constructor(private reflector: Reflector) {
-    this.rolesGuard = new RolesGuard(reflector);
-  }
+  constructor(
+    private reflector: Reflector,
+    @Inject(AuthGuardClass) private authGuard: AuthGuardClass,
+    @Inject(RolesGuardClass) private rolesGuard: RolesGuardClass,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    // console.log('request', request);
+    const isProtected = this.reflector.getAllAndOverride<boolean>(
+      'isProtected',
+      [context.getHandler(), context.getClass()],
+    );
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-    // Skip guards if route path starts with /auth
-    if (
-      (request.path.startsWith('/api/auth') && request.method === 'POST') ||
-      (request.path.startsWith('/api/fields') && request.method === 'GET') ||
-      (request.path.startsWith('/api/bookings') && request.method === 'GET') ||
-      (request.path.startsWith('/api/tournaments') &&
-        request.method === 'GET') ||
-      (request.path.startsWith('/api/matches/') && request.method === 'GET')
-      // ||
-      // (request.path === '/api/users' && request.method === 'GET')
-    ) {
-      return true; // allow unauthenticated access
+    // Public by default
+    if (!isProtected && !requiredRoles?.length) {
+      return true;
     }
 
-    // Apply AuthGuard first
+    // Auth check
     const isAuthenticated = await this.authGuard.canActivate(context);
     if (!isAuthenticated) {
       return false;
     }
-    // Apply RolesGuard after
-    return this.rolesGuard.canActivate(context);
+
+    // Roles only if specified
+    if (requiredRoles?.length) {
+      const rolesResult = this.rolesGuard.canActivate(context);
+      return rolesResult;
+    }
+
+    return true;
   }
 }

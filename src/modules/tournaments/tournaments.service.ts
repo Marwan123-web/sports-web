@@ -24,50 +24,61 @@ export class TournamentsService {
     // ✅ Validate creator exists
     const creator = await this.usersRepo.findOne({ where: { id: creatorId } });
     if (!creator) throw new NotFoundException('Creator not found');
-  
+
     const startDate = new Date(dto.startDate + 'T00:00:00');
     const endDate = new Date(dto.endDate + 'T00:00:00');
-    
+
     if (startDate > endDate) {
       throw new BadRequestException('Start date must be before end date');
     }
-  
+
     const tournament = this.tournamentsRepo.create({
       ...dto,
-      creator: { id: creatorId },  // ✅ Reference only!
+      creator: { id: creatorId }, // ✅ Reference only!
       status: 'registration',
       currentTeams: 0,
       isActive: true,
     });
-    
-    return await this.tournamentsRepo.save(tournament);  // ✅ Auto-links creator
+
+    return await this.tournamentsRepo.save(tournament); // ✅ Auto-links creator
   }
 
-  findAll(q?: string) {
+  findAll(
+    query: {
+      q?: string;
+      sport?: string;
+      status?: string;
+      creatorId?: number;
+    } = {},
+  ) {
+    const { q, sport, status, creatorId } = query;
+
     const baseWhere: any = { isActive: true };
 
-    if (!q) {
-      return this.tournamentsRepo.find({
-        where: baseWhere,
-        order: { startDate: 'ASC' },
-        relations: ['creator'],
-      });
-    }
+    const dynamicFilters = {
+      ...(sport && { sport }),
+      ...(status && { status }),
+      ...(q && { name: ILike(`%${q}%`) }),
+      ...(creatorId && { creator: { id: creatorId } }), // Nested relation filter
+    };
 
-    const like = `%${q}%`;
-    const isSportMatch = ['football', 'volleyball', 'basketball'].includes(q.toLowerCase());
+    const where =
+      Object.keys(dynamicFilters).length > 0
+        ? { ...baseWhere, ...dynamicFilters }
+        : baseWhere;
 
     return this.tournamentsRepo.find({
-      where: isSportMatch 
-        ? [
-            // ✅ Exact sport OR name search
-            { sport: q as any, isActive: true },
-            { name: ILike(like), isActive: true },
-          ]
-        : [{ name: ILike(like), isActive: true }],
+      where,
       order: { startDate: 'ASC' },
       relations: ['creator'],
     });
+  }
+
+  findMy(
+    query: { q?: string; sport?: string; status?: string } = {},
+    userId: number,
+  ) {
+    return this.findAll({ ...query, creatorId: userId });
   }
 
   async findOne(id: string) {
@@ -85,7 +96,7 @@ export class TournamentsService {
 
   async update(id: string, dto: UpdateTournamentDto, userId: number) {
     const tournament = await this.findOne(id);
-    
+
     if (tournament.creator!.id !== userId) {
       throw new ForbiddenException('Only the creator can edit this tournament');
     }
@@ -106,24 +117,26 @@ export class TournamentsService {
 
   async remove(id: string, userId: number) {
     const tournament = await this.findOne(id);
-    
+
     if (tournament.creator!.id !== userId) {
-      throw new ForbiddenException('Only the creator can delete this tournament');
+      throw new ForbiddenException(
+        'Only the creator can delete this tournament',
+      );
     }
 
-    await this.tournamentsRepo.update(id, { 
-      isActive: false 
+    await this.tournamentsRepo.update(id, {
+      isActive: false,
     });
-    
+
     return { deleted: true };
   }
 
   async findUpcoming() {
     const now = new Date();
     return this.tournamentsRepo.find({
-      where: { 
+      where: {
         isActive: true,
-        startDate: MoreThanOrEqual(now.toISOString().split('T')[0])
+        startDate: MoreThanOrEqual(now.toISOString().split('T')[0]),
       },
       order: { startDate: 'ASC' },
       relations: ['creator'],

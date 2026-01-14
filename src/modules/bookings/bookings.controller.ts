@@ -23,6 +23,7 @@ import { BookingsService } from '../bookings/bookings.service';
 import { CreateBookingDto } from '../bookings/dto/create-booking.dto';
 import { FieldsService } from '../fields/fields.service';
 import { CustomException } from 'src/common/exceptions/customException';
+import { Protected } from 'src/common/decorators';
 
 @ApiTags('Bookings')
 @Controller('api/bookings') 
@@ -52,6 +53,7 @@ export class BookingsController {
 
   // ✅ EXISTING: Get my bookings
   @Get('my-bookings')
+  @Protected()
   @ApiOperation({ summary: 'Get current user bookings' })
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'User bookings list' })

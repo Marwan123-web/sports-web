@@ -17,7 +17,7 @@ import {
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dtos/updateUser.dto';
-import { Roles } from 'src/common/decorators/roles/roles.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
 import { SystemRoles } from 'src/common/guards/roles/roles.enum';
 
 @ApiTags('Users')

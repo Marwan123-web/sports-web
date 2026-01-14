@@ -23,6 +23,7 @@ import {
 import { FieldsService } from './fields.service';
 import { CreateFieldDto } from './dto/create-field.dto';
 import { UpdateFieldDto } from './dto/update-field.dto';
+import { Sport } from 'src/common/enums/enums';
 
 @ApiTags('Fields')
 @Controller('api/fields')
@@ -63,8 +64,22 @@ export class FieldsController {
       ],
     },
   })
-  findAll(@Query('q') q?: string, @Query('date') date?: string) {
-    return this.fieldsService.findAll(q, date);
+  async findAll(
+    @Query('sport') sport?: Sport,
+    @Query('date') date?: string,
+    @Query('q') q?: string,
+    @Query('priceFrom') priceFrom?: string,
+    @Query('priceTo') priceTo?: string,
+    @Query('address') address?: string,
+  ) {
+    return this.fieldsService.findAll({
+      sport,
+      date,
+      q,
+      priceFrom: priceFrom ? parseInt(priceFrom) : undefined,
+      priceTo: priceTo ? parseInt(priceTo) : undefined,
+      address,
+    });
   }
 
   @Get(':id')

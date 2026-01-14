@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { SystemRoles } from './roles.enum';
 
@@ -7,25 +12,33 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const roles: SystemRoles[] =
-      this.reflector.get<SystemRoles[]>('roles', context.getHandler()) || [];
+    const requiredRoles = this.reflector.getAllAndOverride<SystemRoles[]>(
+      'roles',
+      [context.getHandler(), context.getClass()],
+    );
 
-    // If no roles are required, allow by default
-    if (!roles || roles.length === 0) {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user as any;
+
+
+    if (!requiredRoles?.length) {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
-
-    // Explicitly deny if no user or role attached to request
-    if (!user || !user.role) {
-      return false;
+    if (!user?.role) {
+      throw new ForbiddenException('User role missing');
     }
 
-    // Allow if user's role matches any required role (case-insensitive)
-    return roles.some(
-      (role) => user.role.toUpperCase() === role.toString().toUpperCase(),
+    const hasRole = requiredRoles.some(
+      (role) =>
+        user.role.toString().toUpperCase() === role.toString().toUpperCase(),
     );
+
+
+    if (!hasRole) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
+    return true;
   }
 }

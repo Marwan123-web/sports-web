@@ -18,7 +18,10 @@ import { PlayersModule } from './modules/players/players.module';
 import { StandingsModule } from './modules/standings/standings.module';
 import { TeamsModule } from './modules/teams/teams.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
-
+import { APP_GUARD } from '@nestjs/core';
+import { GlobalGuard } from './common/guards/globalGuard';
+import { AuthGuard } from './common/guards/auth/auth.guard';
+import { RolesGuard } from './common/guards/roles/roles.guard';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -34,34 +37,14 @@ import { TournamentsModule } from './modules/tournaments/tournaments.module';
     StandingsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    AuthGuard,
+    RolesGuard,
+    {
+      provide: APP_GUARD,
+      useClass: GlobalGuard,
+    },
+  ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware)
-      .exclude(
-        // Auth routes
-        { path: 'api/auth/(.*)', method: RequestMethod.POST },
-
-        // Public fields GET
-        { path: 'api/fields', method: RequestMethod.GET },
-        { path: 'api/fields/*', method: RequestMethod.GET },
-
-        // Public Bookings GET
-        { path: 'api/bookings', method: RequestMethod.GET },
-        { path: 'api/bookings/*', method: RequestMethod.GET },
-
-        // Public tournaments GET (includes standings, matches list, details)
-        { path: 'api/tournaments', method: RequestMethod.GET },
-        { path: 'api/tournaments/*', method: RequestMethod.GET },
-
-        // Public matches GET
-        { path: 'api/matches/*', method: RequestMethod.GET },
-
-        // Public users list GET
-        // { path: 'api/users', method: RequestMethod.GET }
-      )
-      .forRoutes('*');
-  }
-}
+export class AppModule {}
