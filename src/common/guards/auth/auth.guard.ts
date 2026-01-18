@@ -38,7 +38,6 @@ export class AuthGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      console.error('AuthGuard error:', error);
       throw new UnauthorizedException('Invalid token');
     }
   }

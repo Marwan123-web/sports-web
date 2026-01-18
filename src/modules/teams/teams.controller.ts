@@ -7,6 +7,7 @@ import {
   Req,
   UsePipes,
   ValidationPipe,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
@@ -27,13 +28,16 @@ export class TeamsController {
 
   @Get('tournament/:tournamentId')
   @ApiOperation({ summary: 'Get all teams in a tournament' })
-  findByTournament(@Param('tournamentId') tournamentId: string) {
-    return this.teamsService.findByTournament(tournamentId);
+  findByTournament(
+    @Param('tournamentId') tournamentId: string,
+    @Query() query: { q?: string },
+  ) {
+    return this.teamsService.findByTournament(tournamentId, query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get team by ID' })
-  findOne(@Param('id') id: string) {
-    return this.teamsService.findOne(id);
+  findOne(@Param('id') id: string, @Query() query: { q?: string }) {
+    return this.teamsService.findOne(id, query);
   }
 }

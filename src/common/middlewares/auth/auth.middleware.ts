@@ -58,7 +58,6 @@ export class AuthMiddleware implements NestMiddleware {
 
       next();
     } catch (error) {
-      console.error('AuthMiddleware error:', error);
       throw new CustomException(1004);
     }
   }
