@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AuthGuard as AuthGuardClass } from './auth/auth.guard';
 import { RolesGuard as RolesGuardClass } from './roles/roles.guard';
+import { RequestMethod } from '@nestjs/common';
 
 @Injectable()
 export class GlobalGuard implements CanActivate {
@@ -27,23 +28,34 @@ export class GlobalGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    // Public by default
-    if (!isProtected && !requiredRoles?.length) {
+    // ✅ Auto-protect mutations: POST, PUT, PATCH, DELETE
+    const method = request.method;
+
+    const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+    const requiresAuth = isProtected || isMutation;
+
+    // Public by default: no decorators AND not mutation
+    if (!requiresAuth && !requiredRoles?.length) {
+      console.log('✅ Public safe route:', method, request.path);
       return true;
     }
 
     // Auth check
     const isAuthenticated = await this.authGuard.canActivate(context);
     if (!isAuthenticated) {
+      console.log('❌ Auth failed:', method, request.path);
       return false;
     }
 
     // Roles only if specified
     if (requiredRoles?.length) {
       const rolesResult = this.rolesGuard.canActivate(context);
+      console.log('🔍 Roles result:', rolesResult, request.path);
       return rolesResult;
     }
 
+    console.log('✅ Auth passed:', method, request.path);
     return true;
   }
 }
