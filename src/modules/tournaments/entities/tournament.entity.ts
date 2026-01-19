@@ -54,7 +54,7 @@ export class Tournament {
   @OneToMany(() => Team, (team) => team.tournament, { cascade: true })
   teams: Team[];
 
-  @OneToMany(() => Match, (match) => match.tournament, { cascade: true })
+  @OneToMany(() => Match, (match) => match.tournament)
   matches: Match[];
 
   @CreateDateColumn()

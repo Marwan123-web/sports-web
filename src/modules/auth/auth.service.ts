@@ -21,11 +21,7 @@ export class AuthService {
   ) {}
 
   // SIGNUP
-  async register(
-    userDto: CreateAuthDto,
-    ipAddress: string,
-    userAgent: string,
-  ) {
+  async register(userDto: CreateAuthDto, ipAddress: string, userAgent: string) {
     const existing = await this.usersService.findByUsername(userDto.username);
     if (existing) {
       throw new CustomException(1008); // username already used
@@ -37,6 +33,7 @@ export class AuthService {
       username: userDto.username,
       name: userDto.name,
       surname: userDto.surname,
+      email: userDto.email,
       password: hashedPassword,
     });
 
@@ -130,10 +127,7 @@ export class AuthService {
     if (!user) throw new CustomException(1004);
 
     // check username uniqueness if changed
-    if (
-      userData.username &&
-      userData.username !== user.username
-    ) {
+    if (userData.username && userData.username !== user.username) {
       const existing = await this.usersService.findByUsername(
         userData.username,
       );

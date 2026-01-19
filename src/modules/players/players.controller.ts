@@ -23,7 +23,7 @@ export class PlayersController {
   @ApiResponse({ status: 201, description: 'Player created successfully' })
   @UsePipes(new ValidationPipe({ transform: true }))
   create(@Body() dto: CreatePlayerDto, @Req() req: any) {
-    return this.playersService.create(dto, req.user['sub']);
+    return this.playersService.create(dto, req.user.id);
   }
 
   @Get('team/:teamId')

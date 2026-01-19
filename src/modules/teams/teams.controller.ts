@@ -23,7 +23,7 @@ export class TeamsController {
   @ApiResponse({ status: 201, description: 'Team created successfully' })
   @UsePipes(new ValidationPipe({ transform: true }))
   create(@Body() dto: CreateTeamDto, @Req() req: any) {
-    return this.teamsService.create(dto, req.user['sub']);
+    return this.teamsService.create(dto, req.user.id);
   }
 
   @Get('tournament/:tournamentId')

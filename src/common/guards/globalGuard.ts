@@ -19,6 +19,14 @@ export class GlobalGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+    const path = request.path;
+    const method = request.method;
+
+    if (path.match(/^\/api\/auth\/(signin|signup)$/i) && method === 'POST') {
+      console.log('✅ Auth exception: login/signup allowed');
+      return true;
+    }
+
     const isProtected = this.reflector.getAllAndOverride<boolean>(
       'isProtected',
       [context.getHandler(), context.getClass()],
@@ -29,8 +37,6 @@ export class GlobalGuard implements CanActivate {
     ]);
 
     // ✅ Auto-protect mutations: POST, PUT, PATCH, DELETE
-    const method = request.method;
-
     const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
 
     const requiresAuth = isProtected || isMutation;

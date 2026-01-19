@@ -5,11 +5,21 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import {
+  ILike,
+  Repository,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  DeepPartial,
+  DataSource,
+  In,
+} from 'typeorm';
 import { Tournament } from './entities/tournament.entity';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { User } from '../users/entities/user.entity';
+import { Team } from '../teams/entities/team.entity';
+import { Match } from '../matches/entities/match.entity';
 
 @Injectable()
 export class TournamentsService {
@@ -18,6 +28,9 @@ export class TournamentsService {
     private readonly tournamentsRepo: Repository<Tournament>,
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
+    @InjectRepository(Team) private readonly teamsRepo: Repository<Team>,
+    @InjectRepository(Match) private readonly matchesRepo: Repository<Match>,
+    private dataSource: DataSource,
   ) {}
 
   async create(dto: CreateTournamentDto, creatorId: number) {
@@ -98,21 +111,27 @@ export class TournamentsService {
     const tournament = await this.findOne(id);
 
     if (tournament.creator!.id !== userId) {
-      throw new ForbiddenException('Only the creator can edit this tournament');
+      throw new ForbiddenException('Only the creator can edit');
     }
 
-    if (dto.startDate && dto.endDate) {
-      if (new Date(dto.startDate) > new Date(dto.endDate)) {
-        throw new BadRequestException('Start date must be before end date');
+    if (dto.status === 'ongoing') {
+      if (tournament.currentTeams != tournament.maxTeams) {
+        throw new ForbiddenException('All teams must register first');
       }
+
+      const teamCount = await this.teamsRepo.count({
+        where: { tournament: { id } },
+      });
+
+      await this.generateRoundRobinSchedule(id, teamCount);
     }
 
-    Object.assign(tournament, {
-      ...dto,
-      updatedAt: new Date(),
-    });
+    // ✅ Fix: Clear relations + no reload
+    delete (tournament as any).matches;
+    delete (tournament as any).teams;
 
-    return await this.tournamentsRepo.save(tournament);
+    Object.assign(tournament, { ...dto, updatedAt: new Date() });
+    return this.tournamentsRepo.save(tournament, { reload: false });
   }
 
   async remove(id: string, userId: number) {
@@ -152,5 +171,58 @@ export class TournamentsService {
       registrationOpen: tournament.status === 'registration',
       matchesCount: tournament.matches?.length || 0,
     };
+  }
+
+  async generateRoundRobinSchedule(
+    tournamentId: string,
+    teamCount: number,
+  ): Promise<number> {
+    const existingMatches = await this.matchesRepo.count({
+      where: { tournamentId },
+    });
+    if (existingMatches > 0) return existingMatches;
+
+    const teams = await this.teamsRepo.find({
+      where: { tournamentId },
+      order: { id: 'ASC' },
+    });
+
+    if (teams.length !== teamCount || teams.length < 2) {
+      throw new BadRequestException(
+        `Need ${teamCount} teams, got ${teams.length}`,
+      );
+    }
+
+    const n = teams.length;
+    const teamIds = teams.map((t) => t.id);
+    let sql = `DELETE FROM "match" WHERE "tournamentId" = '${tournamentId}'; `;
+
+    // ✅ Tomorrow 10:00 AM local time
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 1);
+    startDate.setHours(10, 0, 0, 0);
+
+    let currentDate = new Date(startDate);
+
+    for (let r = 1; r <= n - 1; r++) {
+      for (let i = 0; i < Math.floor(n / 2); i++) {
+        const t1 = teamIds[i];
+        const t2 = teamIds[n - 1 - i];
+
+        const matchDate = new Date(currentDate);
+        // ✅ PostgreSQL format: '2026-01-20 10:00:00'
+        const dateStr = matchDate.toISOString().slice(0, 19).replace('T', ' ');
+
+        sql += `INSERT INTO "match" ("tournamentId","team1Id","team2Id","round","status","scheduledAt") VALUES('${tournamentId}','${t1}','${t2}',${r},'scheduled','${dateStr}'); `;
+
+        currentDate.setHours(currentDate.getHours() + 2);
+      }
+
+      const last = teamIds.pop()!;
+      teamIds.splice(1, 0, last);
+    }
+
+    await this.dataSource.query(sql);
+    return (n * (n - 1)) / 2;
   }
 }

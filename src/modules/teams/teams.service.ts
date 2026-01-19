@@ -69,7 +69,7 @@ export class TeamsService {
         isActive: true,
       },
       order: { createdAt: 'ASC' },
-      relations: ['tournament', 'players'],
+      relations: ['tournament', 'tournament.creator', 'players'],
     });
   }
 
@@ -81,7 +81,7 @@ export class TeamsService {
         id,
         isActive: true,
       },
-      relations: ['tournament', 'players'],
+      relations: ['tournament', 'tournament.creator', 'players'],
     });
 
     if (!team) {

@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   CreateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Tournament } from '../../tournaments/entities/tournament.entity';
 import { Player } from '../../players/entities/player.entity';
@@ -18,7 +19,11 @@ export class Team {
   @Column()
   name: string;
 
-  @ManyToOne(() => Tournament, (tournament) => tournament.teams)
+  @Column('uuid')
+  tournamentId: string; // ✅
+
+  @ManyToOne(() => Tournament, (tournament) => tournament.teams) // Fixed: teams not matches
+  @JoinColumn({ name: 'tournamentId' })
   tournament: Tournament;
 
   @OneToMany(() => Player, (player) => player.team)

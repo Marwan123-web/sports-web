@@ -26,9 +26,9 @@ export class MatchesService {
   async create(dto: CreateMatchDto, userId: number) {
     // ✅ Check tournament exists + registration closed
     const tournament = await this.tournamentsRepo.findOne({
-      where: { 
-        id: dto.tournamentId, 
-        isActive: true 
+      where: {
+        id: dto.tournamentId,
+        isActive: true,
       },
     });
 
@@ -37,15 +37,17 @@ export class MatchesService {
     }
 
     if (tournament.status === 'registration') {
-      throw new BadRequestException('Cannot schedule matches during registration');
+      throw new BadRequestException(
+        'Cannot schedule matches during registration',
+      );
     }
 
     // ✅ Check both teams exist + belong to tournament
     const team1 = await this.teamsRepo.findOne({
-      where: { id: dto.team1Id, tournament: { id: dto.tournamentId } }
+      where: { id: dto.team1Id, tournament: { id: dto.tournamentId } },
     });
     const team2 = await this.teamsRepo.findOne({
-      where: { id: dto.team2Id, tournament: { id: dto.tournamentId } }
+      where: { id: dto.team2Id, tournament: { id: dto.tournamentId } },
     });
 
     if (!team1 || !team2) {
@@ -61,7 +63,7 @@ export class MatchesService {
       where: [
         { team1: { id: dto.team1Id }, team2: { id: dto.team2Id } },
         { team1: { id: dto.team2Id }, team2: { id: dto.team1Id } },
-      ]
+      ],
     });
 
     if (existingMatch) {
@@ -89,7 +91,9 @@ export class MatchesService {
 
     // ✅ Only tournament creator can update results
     if (match.tournament.creator!.id !== userId) {
-      throw new ForbiddenException('Only tournament creator can update results');
+      throw new ForbiddenException(
+        'Only tournament creator can update results',
+      );
     }
 
     if (dto.scoreTeam1 !== undefined || dto.scoreTeam2 !== undefined) {
@@ -103,7 +107,7 @@ export class MatchesService {
 
   async findByTournament(tournamentId: string) {
     return await this.matchesRepo.find({
-      where: { 
+      where: {
         tournament: { id: tournamentId },
       },
       order: { createdAt: 'ASC' },

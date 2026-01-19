@@ -24,7 +24,7 @@ export class MatchesController {
   @ApiResponse({ status: 201, description: 'Match scheduled successfully' })
   @UsePipes(new ValidationPipe({ transform: true }))
   create(@Body() dto: CreateMatchDto, @Req() req: any) {
-    return this.matchesService.create(dto, req.user['sub']);
+    return this.matchesService.create(dto, req.user.id);
   }
 
   @Patch(':id/result')
@@ -36,7 +36,7 @@ export class MatchesController {
     @Body() dto: UpdateMatchResultDto,
     @Req() req: any,
   ) {
-    return this.matchesService.updateResult(id, dto, req.user['sub']);
+    return this.matchesService.updateResult(id, dto, req.user.id);
   }
 
   @Get('tournament/:tournamentId')
