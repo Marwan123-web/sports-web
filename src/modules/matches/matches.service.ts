@@ -111,7 +111,7 @@ export class MatchesService {
         tournament: { id: tournamentId },
       },
       order: { createdAt: 'ASC' },
-      relations: ['tournament', 'team1', 'team2'],
+      relations: ['tournament', 'tournament.creator', 'team1', 'team2'],
     });
   }
 
