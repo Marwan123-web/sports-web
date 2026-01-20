@@ -41,7 +41,18 @@ export class UsersService {
       : {};
     return this.usersRepo.find({
       where,
-      relations: ['tournaments'],  // ✅ Fixed relation name
+      relations: ['tournaments'],
+      select: [
+        'id',
+        'username',
+        'email',
+        'name',
+        'surname',
+        'role',
+        'createdAt',
+        'updatedAt',
+        'isActive',
+      ],
     });
   }
 }

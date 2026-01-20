@@ -97,6 +97,15 @@ export function getMaxRosterSize(sport: Sport): number {
   return sizes[sport] || 20; // Default fallback
 }
 
+export function getPointsConfig(sport: Sport): { win: number; draw: number } {
+  const config: Record<Sport, { win: number; draw: number }> = {
+    [Sport.FOOTBALL]: { win: 3, draw: 1 },
+    [Sport.BASKETBALL]: { win: 2, draw: 0 }, // No draws, but 0 for consistency
+    [Sport.VOLLEYBALL]: { win: 3, draw: 0 }, // Simplified: win/loss only (common in many leagues)
+  };
+  return config[sport] || { win: 3, draw: 1 }; // Football default
+}
+
 export function parseTimeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
@@ -110,7 +119,6 @@ export function calculateDurationHours(
   const endMinutes = parseTimeToMinutes(endTime);
   return (endMinutes - startMinutes) / 60;
 }
-
 
 export function minutesToTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
